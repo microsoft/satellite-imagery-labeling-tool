@@ -25,7 +25,7 @@ The tool uses config files passed via the "config" URL parameter to run differen
     "layerTitle": "Esri World Imagery example",  // the title of the configuration
     "location": "Seattle, Washington, USA",  // the name of the AOI that the basemap covers
     "basemap": "https://planetarycomputer.microsoft.com/api/data/v1/mosaic/tiles/87b72c66331e136e088004fba817e3e8/WebMercatorQuad/{z}/{x}/{y}?asset_bidx=image|1,2,3&assets=image&collection=naip&format=png", // URL pointing to the basemap; this can be anything that `L.tileLayer` can parse
-    "attribution": "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community", // attribution string to display with the map
+    "attribution": "USDA NAIP Imagery", // attribution string to display with the map
     "tms": false // whether the basemap is in a TMS format
 }
 ```

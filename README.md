@@ -22,7 +22,7 @@ The tool uses config files passed via the "config" URL parameter to run differen
     },
     "center": [47.631850578394406, -122.15389251708986],  // the latitude and longitude of the initial map view
     "boundingBox": [[47.57976811421671, -122.23731994628905], [47.68573021131587, -122.07115173339844]],  // the bounding box for which the basemap is valid
-    "layerTitle": "Esri World Imagery example",  // the title of the configuration
+    "layerTitle": "NAIP Imagery",  // the title of the configuration
     "location": "Seattle, Washington, USA",  // the name of the AOI that the basemap covers
     "basemap": "https://planetarycomputer.microsoft.com/api/data/v1/mosaic/tiles/87b72c66331e136e088004fba817e3e8/WebMercatorQuad/{z}/{x}/{y}?asset_bidx=image|1,2,3&assets=image&collection=naip&format=png", // URL pointing to the basemap; this can be anything that `L.tileLayer` can parse
     "attribution": "USDA NAIP Imagery", // attribution string to display with the map

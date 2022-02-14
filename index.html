@@ -1,0 +1,866 @@
+<!--
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+    <title>Satellite image annotation tool</title>
+
+    <link href="css/leaflet.css" rel="stylesheet" />
+    <link href="css/easy-button.css" rel="stylesheet" />
+    <link href="css/leaflet.draw.css" rel="stylesheet" />
+    <link href="css/font-awesome.min.css" rel="stylesheet" />
+    <link href="css/leaflet-ruler.css" rel="stylesheet" />
+    <link href="css/noty.css" rel="stylesheet" />
+    <link href="css/L.Control.Range.css" rel="stylesheet" />
+
+    <script src="js/leaflet.js" type="text/javascript"></script>
+    <script src="js/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="js/noty.js" type="text/javascript"></script>
+    <script src="js/leaflet.filelayer.js" type="text/javascript"></script>
+    <script src="js/easy-button.js" type="text/javascript"></script>
+    <script src="js/leaflet.draw.js" type="text/javascript"></script>
+    <script src="js/leaflet-ruler.js" type="text/javascript"></script>
+    <script src="js/L.Control.Range.js" type="text/javascript"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body,
+        table,
+        tr,
+        td,
+        th,
+        div,
+        h1,
+        h2,
+        input {
+            font-family: "Calibri", "Trebuchet MS", "Ubuntu", Serif;
+            font-size: 11pt;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .titleControl {
+            padding: 10px 20px 13px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .textLabelControl {
+            padding: 10px;
+            background: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            text-align: center;
+        }
+        .textLabelControl div {
+            font-size: 1.2rem;
+        }
+
+        .classPickerControl {
+            padding: 5px 20px 10px 10px;
+            background: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .classPickerControl .radioDiv {
+            margin: 2px;
+        }
+
+        .classPickerControl .classPickerTitle {
+            font-size: larger;
+            font-weight: bold;
+        }
+
+        .classPickerControl label {
+            font-size: larger;
+        }
+
+        .title {
+            font-size: 18pt;
+            font-weight: bold;
+        }
+
+        .src {
+            font-size: 20pt;
+        }
+
+        .helpTitle {
+            font-size: 2rem;
+        }
+
+        .helpParagraph {
+            font-size: 1.5rem;
+        }
+
+        a.leaflet-control-slider-toggle {
+            width: 171px;
+        }
+
+        input[type="radio"] {
+            margin-top: -4px;
+            vertical-align: middle;
+        }
+
+        .leaflet-ruler {
+            height: 30px;
+            width: 30px;
+            background-size: 70%;
+        }
+
+        .custom-shapes {
+            background-image: url(css/images/spritesheet.png);
+            background-image: linear-gradient(transparent, transparent), url(css/images/spritesheet.svg);
+            background-size: 300px 30px;
+            background-repeat: no-repeat;
+            background-clip: padding-box;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .custom-polygon {
+            background-position: -30px 3px;
+        }
+
+        .custom-square {
+            background-position: -60px 3px;
+        }
+
+        .custom-circle {
+            background-position: -270px 3px;
+        }
+
+        .custom-edit {
+            background-position: -210px 3px;
+        }
+
+        .custom-garbage {
+            background-position: -240px 3px;
+        }
+
+        .custom-ruler {
+            background-image: url(css/images/icon.png);
+            background-repeat: no-repeat;
+            background-position: center;
+            height: 30px;
+            width: 30px;
+            background-size: 70%;
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .saved {
+            color: green;
+        }
+        .unsaved{
+            color: red;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<script type="text/javascript">
+//////////////////////////////////////////////
+// Globals
+//////////////////////////////////////////////
+var gMap = null;
+var gImageryLayer = null;
+var gUserPolygons = null;
+var gExaminedAreaPolygons = null;
+var gBrightness = 100;
+var gContrast = 100;
+var gCustomClasses = {
+    "Water": "#0000ff",
+    "Cloud": "#cccccc",
+    "Other": "#ff0000"
+}
+var gCustomSecondaryClasses = {
+    "Possible": "#000000",
+    "Probable": "#000000",
+    "Definite": "#000000"
+}
+
+var gSelectedClass = Object.keys(gCustomClasses)[0];
+var gSelectedSecondaryClass = Object.keys(gCustomSecondaryClasses)[0];
+var gCenter = [47.64318610543658, -121.06933593749999];
+var gBounds = [[45.920587344733654, -125.068359375],[49.095452162534826, -125.068359375]];
+var gFilename = "None";
+var gLocation = "Washington, USA";
+var gBasemapURL = "";
+var gTMS = true;
+var gScale = 255;
+var gEdited = false;
+var gAttribution = "";
+
+var confidenceToStrokeWidth = {
+    "Possible": 1,
+    "Probable": 2,
+    "Definite": 4
+};
+
+var gHelpPopup = L.popup({
+    "maxWidth": 600,
+    "minWidth": 100,
+    "closeButton": true,
+    "className": "helpPopup",
+    "autoPan": true
+})
+var helpContent = "<h1 class='helpTitle'>Usage Instructions</h1>"
+helpContent += "<p class='helpParagraph'>This is a tool for quickly creating and sharing annotation over large satellite image scenes. Users can select a class from the class list, add polygon and point label annotations over the imagery, then download the layer of annotations as a GeoJSON file that can be easily integrated with other GIS workflows.</p>"
+helpContent += "<p class='helpParagraph'>A walkthrough of the buttons on the left of the screen:</p>"
+helpContent += "<p class='helpParagraph'><i class='fa fa-question' aria-hidden='true'></i> displays this help screen!</p>"
+helpContent += "<p class='helpParagraph'><i class='fa fa-upload' aria-hidden='true'></i> displays annotations from a previously downloaded GeoJSON file</p>"
+helpContent += "<p class='helpParagraph'><i class='fa fa-download' aria-hidden='true'></i> downloads the current set of annotations as a GeoJSON file</p>"
+helpContent += "<p class='helpParagraph'><i class='custom-polygon custom-shapes'></i><i class='custom-square custom-shapes'></i><i class='custom-circle custom-shapes'></i> adds polygons, rectangles, and point annotations of the selected class</p>"
+helpContent += "<p class='helpParagraph'><i class='custom-edit custom-shapes'></i><i class='custom-garbage custom-shapes'></i> edit and delete annotations on the screen</p>"
+helpContent += "<p class='helpParagraph'><i class='custom-ruler'></i> ruler tool, click two points to measure the distance between them, press ESC to exit out of ruler mode</p>"
+gHelpPopup.setContent(helpContent)
+
+//////////////////////////////////////////////
+// Helper methods
+//////////////////////////////////////////////
+var download = function(filename, text) {
+    // Method for dynamically download a text file
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+};
+
+var saveCheck = function(){
+    if(gEdited){
+        $("#lblSave").html("Unsaved");
+        $("#lblSave").addClass("unsaved");
+        $("#lblSave").removeClass("saved");
+    }
+
+    window.setTimeout(saveCheck, 1000);
+}
+
+var markSaved = function(){
+    gEdited = false;
+    $("#lblSave").html("Saved");
+    $("#lblSave").addClass("saved");
+    $("#lblSave").removeClass("unsaved");
+}
+
+var addDownloadControl = function(){
+    var downloadControl = L.easyButton('fa-download', function(){
+        var numEntries = Object.keys(gUserPolygons._layers).length;
+        if(numEntries > 0){
+            notifySuccessMessage("Downloading " + numEntries + " custom polygons as geojson");
+
+            var geoJSON = {
+                "type": "FeatureCollection",
+                "features": []
+            };
+            for(i in gUserPolygons._layers){
+                var layer = gUserPolygons._layers[i];
+                var layerGeoJSON = layer.toGeoJSON()
+                layerGeoJSON["properties"]["class"] = layer["properties"]["class"]
+                layerGeoJSON["properties"]["confidence"] = layer["properties"]["confidence"]
+                geoJSON["features"].push(layerGeoJSON);
+            }
+
+            for(i in gExaminedAreaPolygons._layers){
+                var layer = gExaminedAreaPolygons._layers[i];
+                var layerGeoJSON = layer.toGeoJSON()
+                layerGeoJSON["properties"]["class"] = layer["properties"]["class"]
+                layerGeoJSON["properties"]["confidence"] = layer["properties"]["confidence"]
+                geoJSON["features"].push(layerGeoJSON);
+            }
+
+            let date = new Date();
+            let dateString = date.getHours() + "-" + date.getMinutes() + "-" + date.getSeconds() + "_" + date.getMonth() + "-" + date.getDay() + "-" + date.getFullYear();
+
+            download(gFilename + "_annotations_" + dateString + "_.geojson", JSON.stringify(geoJSON));
+
+            markSaved();
+        }else{
+            notifyFailMessage("No custom polygons have been created");
+        }
+    }, 'Download existing shapes as GeoJSON');
+    return downloadControl;
+};
+
+var addHelpControl = function(){
+    var helpControl = L.easyButton('fa-question', function(){
+
+        if(gHelpPopup.isOpen()){
+            gHelpPopup.removeFrom(gMap);
+        }else{
+            gHelpPopup.setLatLng(getMapCenterOffset()).openOn(gMap);
+        }
+    })
+    return helpControl;
+};
+
+var addZoomControl = function(position="topleft"){
+    return L.control.zoom({
+        position: position
+    })
+};
+
+var addDrawControl = function(){
+    var drawControl = new L.Control.Draw({
+        edit: {
+            featureGroup: gUserPolygons,
+            edit: true,
+            remove: true,
+            allowIntersection: false
+        },
+        draw: {
+            polyline: false,
+            circle: false,
+            circlemarker: true,
+            rectangle: true,
+            marker: false,
+            polygon: {
+                allowIntersection: false,
+                showArea: false
+            }
+        }
+    });
+    return drawControl;
+};
+
+var addTitleControl = function(position="topleft"){
+    var titleControl = L.control({position: position});
+    titleControl.onAdd = function(map) {
+        this._div = L.DomUtil.create('div', 'titleControl');
+        this.update();
+        L.DomEvent.on(this._div, 'click', L.DomEvent.stopPropagation);
+        return this._div;
+    };
+    titleControl.update = function(props) {
+        var content = "";
+        content += "<div class='title'>Microsoft AI for Good - Satellite image annotation tool</div>";
+        content += "<div style='text-align:left;font-size:1.2rem;'>";
+        content += "Location: " + gLocation + "<br/>";
+        content += "Imagery: " + gFilename + "<br/>";
+        content +=  "</div>";
+        this._div.innerHTML = content;
+    };
+    return titleControl;
+};
+
+var addClassPickerControl = function(position="topleft"){
+    var classPickerControl = L.control({position: position});
+    classPickerControl.onAdd = function(map) {
+        this._div = L.DomUtil.create('div', 'classPickerControl');
+        this.update();
+        L.DomEvent.on(this._div, 'click', L.DomEvent.stopPropagation);
+        return this._div;
+    };
+    classPickerControl.update = function(props) {
+
+        $(this._div).append($("<div class='classPickerTitle'>Classes</div>"));
+
+        for(var className in gCustomClasses){
+            var classColor = gCustomClasses[className];
+
+            var container = $('<div class="radioDiv">');
+            var button = $('<input type="radio" id="' + className +'" name="classVal" value="' + className +'">')
+            var label = $('<label for="' + className +'">' + className +'</label>');
+            label.css("color", classColor);
+            container.append(button)
+            container.append(label)
+            $(this._div).append(container);
+        }
+    }
+    return classPickerControl;
+};
+
+var addSecondaryClassPickerControl = function(position="topleft"){
+    var classPickerControl = L.control({position: position});
+    classPickerControl.onAdd = function(map) {
+        this._div = L.DomUtil.create('div', 'classPickerControl');
+        this.update();
+        L.DomEvent.on(this._div, 'click', L.DomEvent.stopPropagation);
+        return this._div;
+    };
+    classPickerControl.update = function(props) {
+
+        $(this._div).append($("<div class='classPickerTitle'>Secondary Classes</div>"));
+
+        for(var className in gCustomSecondaryClasses){
+            var classColor = gCustomSecondaryClasses[className];
+
+            var container = $('<div class="radioDiv">');
+            var button = $('<input type="radio" id="' + className +'" name="secondaryClassVal" value="' + className +'">')
+            var label = $('<label for="' + className +'">' + className +'</label>');
+            label.css("color", classColor);
+            container.append(button)
+            container.append(label)
+            $(this._div).append(container);
+        }
+    }
+    return classPickerControl;
+};
+
+var addZoomDisplayControl = function(position="bottomright"){
+    var zoomDisplayControl = L.control({position: position});
+    zoomDisplayControl.onAdd = function(map) {
+        this._div = L.DomUtil.create('div', 'textLabelControl');
+        this.update();
+        L.DomEvent.on(this._div, 'click', L.DomEvent.stopPropagation);
+        return this._div;
+    };
+    zoomDisplayControl.update = function(props) {
+
+        $(this._div).append($("<div>Zoom Level: <span id='lblZoomLevel'>0</span></div>"));
+    }
+    return zoomDisplayControl;
+};
+
+var addSaveIndicatorControl = function(position="topleft"){
+    var saveIndicatorControl = L.control({position: position});
+    saveIndicatorControl.onAdd = function(map) {
+        this._div = L.DomUtil.create('div', 'textLabelControl');
+        this.update();
+        L.DomEvent.on(this._div, 'click', L.DomEvent.stopPropagation);
+        return this._div;
+    };
+    saveIndicatorControl.update = function(props) {
+
+        $(this._div).append($("<div>Save status: <span id='lblSave' class='saved'>Saved</span></div>"));
+    }
+    return saveIndicatorControl;
+};
+
+var addUploadControl = function(){
+    L.Control.FileLayerLoad.LABEL = '<span class="fa fa-upload"></span>';
+    var uploadControl = L.Control.fileLayerLoad({
+        fitBounds: false,
+        addToMap: false,
+        formats: [
+            '.geojson'
+        ],
+        layerOptions: {
+            pane: "polygons"
+        }
+    });
+    return uploadControl;
+};
+
+var addRescaleSlider = function(){
+    var rescaleSliderControl = L.control.range({
+        position: 'bottomleft',
+        id: 'scaleSlider',
+        orient: 'horizontal',
+        min: 0,
+        max: 255,
+        value: 255,
+        label: "Scale",
+        icon: true,
+    });
+    rescaleSliderControl.on("input change", function(e){
+        var value = e.value;
+        gScale = value;
+        gImageryLayer.setUrl(gBasemapURL.replace("{scale}", gScale));
+        gImageryLayer.redraw();
+    })
+    return rescaleSliderControl;
+};
+
+var addContrastSlider = function(){
+    var contrastSliderControl = L.control.range({
+        position: 'bottomleft',
+        id: 'contrastSlider',
+        orient: 'horizontal',
+        min: 0,
+        max: 200,
+        value: 100,
+        label: "Contrast",
+        icon: true,
+    });
+    contrastSliderControl.on("input change", function(e){
+        var value = e.value;
+        gContrast = value;
+        $(".leaflet-tile-container img").css("filter", "brightness("+gBrightness+"%) contrast("+gContrast+"%)");
+    })
+    return contrastSliderControl;
+};
+
+var addBrightnessSlider = function(){
+    var brightnessSliderControl = L.control.range({
+        position: 'bottomleft',
+        id: 'brightnessSlider',
+        orient: 'horizontal',
+        min: 0,
+        max: 200,
+        value: 100,
+        label: "Brightness",
+        icon: true,
+    });
+    brightnessSliderControl.on("input change", function(e){
+        var value = e.value;
+        gBrightness = value;
+        $(".leaflet-tile-container img").css("filter", "brightness("+gBrightness+"%) contrast("+gContrast+"%)");
+    })
+    return brightnessSliderControl;
+};
+
+var notifySuccessMessage = function(message, timeout=2000){
+    new Noty({
+        type: 'success',
+        text: message,
+        layout: 'topRight',
+        timeout: timeout,
+        theme: 'metroui'
+    }).show();
+};
+
+var notifyFailMessage = function(message, timeout=2000){
+    new Noty({
+        type: "error",
+        text: message,
+        layout: 'topRight',
+        timeout: timeout,
+        theme: 'metroui'
+    }).show();
+};
+
+var getPolygonStyle = function(color="#00ff00", w=1){
+    return  {
+        "fillOpacity": 0,
+        "color": color,
+        "weight": 1.5*w,
+        "opacity": 1
+    }
+};
+
+var getMapCenterOffset = function(){
+    var bounds = gMap.getBounds();
+    var top = bounds["_northEast"]["lat"];
+    var right = bounds["_northEast"]["lng"];
+    var bottom = bounds["_southWest"]["lat"];
+    var left = bounds["_southWest"]["lng"];
+    var latDiff = (top - bottom) * 0.15
+    var lat = bottom + latDiff
+    var lon = (left + right) / 2
+    var latLng = L.latLng(lat, lon);
+    return latLng;
+};
+
+
+//////////////////////////////////////////////
+// Runtime entrance
+//////////////////////////////////////////////
+$(document).ready(function(){
+
+    var configURL = "example.json";
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    if(urlParams.has("config")){
+        configURL = urlParams.get("config");
+    }
+
+
+    //////////////////////////////////////////////
+    // Load configuration file
+    //////////////////////////////////////////////
+    $.ajax({
+        url: configURL,
+        async: false,
+        dataType: 'json',
+        success: function (response) {
+            gCustomClasses = response["classes"]
+            gSelectedClass = Object.keys(gCustomClasses)[0];
+            gCenter = response["center"];
+            gBounds = response["boundingBox"];
+            gFilename = response["layerTitle"];
+            gLocation = response["location"];
+            gBasemapURL = response["basemap"];
+            gAttribution = response["attribution"];
+            if("tms" in response){
+                gTMS = response["tms"];
+            }
+        },
+        error: function(){
+            notifyFailMessage("Could not load configuration file", 10000);
+        }
+    });
+
+
+    //////////////////////////////////////////////
+    // Setup the map
+    //////////////////////////////////////////////
+    gImageryLayer = L.tileLayer(gBasemapURL.replace("{scale}", gScale), {
+        tms: gTMS,
+        attribution: gAttribution,
+        minZoom: 8,
+        maxZoom: 21,
+        maxNativeZoom: 19,
+        bounds: gBounds
+    });
+
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        minZoom: 8,
+        maxZoom: 21,
+        maxNativeZoom: 17,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+
+    var esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 21,
+        maxNativeZoom: 17,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
+
+    gMap = L.map('map', {
+        center: gCenter,
+        zoom: 15,
+        minZoom: 8,
+        maxZoom: 21,
+        zoomControl: false,
+        keyboard: true,
+        layers: [gImageryLayer, osm]
+    });
+    gMap.createPane('polygons');
+    gMap.getPane('polygons').style.zIndex = 200;
+
+
+    //////////////////////////////////////////////
+    // Add the layer that polygons will be drawn to and register a click handler
+    //////////////////////////////////////////////
+    gUserPolygons = new L.geoJSON(null, {
+        style: getPolygonStyle("#00ff00", 1),
+        pane: "polygons"
+    });
+    gUserPolygons.on('click', function (e) {
+        console.log(e);
+    });
+    gUserPolygons.addTo(gMap);
+
+    gExaminedAreaPolygons = new L.geoJSON(null, {
+        style: getPolygonStyle("#000000", 1),
+        pane: "polygons"
+    });
+    gExaminedAreaPolygons.on('click', function (e) {
+        console.log(e);
+    });
+    gExaminedAreaPolygons.addTo(gMap);
+
+
+    //////////////////////////////////////////////
+    // Build the GUI
+    //////////////////////////////////////////////
+    var titleControl = addTitleControl();
+    titleControl.addTo(gMap);
+
+    var saveControl = addSaveIndicatorControl();
+    saveControl.addTo(gMap);
+
+    var zoomControl = addZoomControl();
+    zoomControl.addTo(gMap);
+
+    var helpControl = addHelpControl();
+    helpControl.addTo(gMap);
+
+    var uploadControl = addUploadControl();
+    uploadControl.addTo(gMap);
+
+    var downloadControl = addDownloadControl();
+    downloadControl.addTo(gMap);
+
+    var drawControl = addDrawControl();
+    drawControl.addTo(gMap);
+
+    var rulerControl = L.control.ruler({
+        position: 'topleft',
+        lengthUnit: {
+            display: 'm',
+            decimal: 2,
+            factor: 1000,
+            label: 'Distance:'
+        }
+    });
+    rulerControl.addTo(gMap);
+
+    var classPickerControl = addClassPickerControl('topright');
+    classPickerControl.addTo(gMap);
+    $("#" + gSelectedClass).prop("checked", true);
+
+    var secondaryClassPickerControl = addSecondaryClassPickerControl('topright');
+    secondaryClassPickerControl.addTo(gMap);
+    $("#" + gSelectedSecondaryClass).prop("checked", true);
+
+
+    var overlaymaps = Object()
+    overlaymaps[gFilename] = gImageryLayer;
+    overlaymaps["Completed sections"] = gExaminedAreaPolygons;
+    var layerPickerControl = L.control.layers({
+        "Esri World Imagery": esri,
+        "Open Street Map": osm,
+    }, overlaymaps, {collapsed: false, position: "bottomleft"});
+    layerPickerControl.addTo(gMap);
+
+    var contrastSliderControl = addContrastSlider();
+    contrastSliderControl.addTo(gMap);
+
+    var brightnessSliderControl = addBrightnessSlider();
+    brightnessSliderControl.addTo(gMap);
+
+    var rescaleSliderControl = addRescaleSlider();
+    rescaleSliderControl.addTo(gMap);
+
+    var zoomDisplayControl = addZoomDisplayControl()
+    zoomDisplayControl.addTo(gMap);
+    $("#lblZoomLevel").html(gMap.getZoom());
+
+
+    //////////////////////////////////////////////
+    // Register some event handlers
+    //////////////////////////////////////////////
+    $('input[type=radio][name=classVal]').on('change', function() {  // Radio button change
+        gSelectedClass = $(this).val();
+    });
+
+    $('input[type=radio][name=secondaryClassVal]').on('change', function() {  // Radio button change
+        gSelectedSecondaryClass = $(this).val();
+    });
+
+    gMap.on("draw:created", function (e) {  // Added a polygon
+        var layer = e.layer;
+        var type = e.layerType;
+
+        var classColor = gCustomClasses[gSelectedClass];
+        layer["properties"] = {
+            "class": gSelectedClass,
+            "confidence": gSelectedSecondaryClass
+        }
+
+        if (gSelectedClass == "Completed section"){
+            if ( type === 'rectangle'){
+                layer.setStyle(getPolygonStyle(classColor, 1));
+                layer.addTo(gExaminedAreaPolygons);
+            }else{
+                notifyFailMessage("Can only add rectangles of 'Completed section'.")
+            }
+        }else{
+            notifySuccessMessage("Created a layer with type: " + type);
+
+            if (type === 'polygon') {
+                layer.setStyle(getPolygonStyle(classColor, confidenceToStrokeWidth[gSelectedSecondaryClass]));
+                layer.addTo(gUserPolygons);
+            } else if ( type === 'rectangle'){
+                layer.setStyle(getPolygonStyle(classColor, confidenceToStrokeWidth[gSelectedSecondaryClass]));
+                layer.addTo(gUserPolygons);
+            } else if ( type === 'circlemarker'){
+                layer.setStyle(getPolygonStyle(classColor, confidenceToStrokeWidth[gSelectedSecondaryClass]));
+                layer.addTo(gUserPolygons);
+            }
+            gEdited = true;
+        }
+    });
+
+    gMap.on("draw:deleted", function(e){
+        for (layerIdx in e.layers._layers){
+            console.debug(e.layers._layers[layerIdx]);
+        }
+        gEdited = true;
+    });
+
+    gMap.on("draw:edited", function(e){
+        gEdited = true;
+    });
+
+    gMap.on("zoomend", function (e) {
+        $(".leaflet-tile-container img").css("filter", "brightness("+gBrightness+"%) contrast("+gContrast+"%)");
+    });
+
+    gMap.on("moveend", function (e) {
+        $(".leaflet-tile-container img").css("filter", "brightness("+gBrightness+"%) contrast("+gContrast+"%)");
+    });
+
+    gMap.on("zoom", function (e) {
+        $("#lblZoomLevel").html(gMap.getZoom());
+    });
+
+    uploadControl.loader.on('data:loaded', function (e) {
+        var count = 0;
+        for (layerIdx in e.layer._layers){
+            var layer = e.layer._layers[layerIdx];
+            var className = layer["feature"]["properties"]["class"];
+            var secondaryClassName = layer["feature"]["properties"]["confidence"];
+            var classColor = gCustomClasses[className];
+            var featureType = layer["feature"]["geometry"]["type"];
+
+            if(featureType == "Point"){
+                var lat = layer["_latlng"]["lat"];
+                var lng = layer["_latlng"]["lng"];
+                var latlng = L.latLng(lat, lng)
+
+                var marker = L.circleMarker(latlng)
+                marker["feature"] = layer["feature"];
+                marker["properties"] = {
+                    "class": className,
+                    "confidence": secondaryClassName
+                }
+                marker.setStyle(getPolygonStyle(classColor, confidenceToStrokeWidth[secondaryClassName]));
+                marker.addTo(gUserPolygons);
+            }else{
+                layer["properties"] = {
+                    "class": className,
+                    "confidence": secondaryClassName
+                }
+
+                if(className == "Completed section"){
+                    layer.setStyle(getPolygonStyle(classColor, 1));
+                    layer.addTo(gExaminedAreaPolygons);
+                }else{
+                    layer.setStyle(getPolygonStyle(classColor, confidenceToStrokeWidth[secondaryClassName]));
+                    layer.addTo(gUserPolygons);
+                }
+            }
+            count += 1;
+        }
+        notifySuccessMessage("Loaded " + count + " labels from: " + e.filename, 5000);
+    });
+    uploadControl.loader.on('data:error', function (error) {
+        console.error("ERROR!");
+        console.error(error);
+    });
+
+
+    if(sessionStorage.getItem('annotatorhelp') !== 'true'){
+        gHelpPopup.setLatLng(getMapCenterOffset()).openOn(gMap);
+        sessionStorage.setItem('annotatorhelp', 'true');
+    }
+
+    saveCheck();
+
+});
+
+</script>
+</body>
+</html>

@@ -2,12 +2,15 @@
 
 This is a lightweight web-interface for creating and sharing vector annotations over satellite/aerial imagery scenes.
 
-Users can select a class from the class list, add polygon and point label annotations over the imagery, then download the layer of annotations as a GeoJSON file that can be easily integrated with other GIS workflows. See the screenshot below for an example:
+Users can select a class from the class list, add polygon and point label annotations over the imagery, then download the layer of annotations as a GeoJSON file that can be easily integrated with other GIS workflows. See the [live demo](https://satelliteimagerydemostg.z5.web.core.windows.net/) or screenshot below for an example:
 
 <p align="center">
     <img src="images/example_screenshot.jpg" width="800"/>
 </p>
 
+## Demo
+
+There is a demo running the `example.json` file [here](https://satelliteimagerydemostg.z5.web.core.windows.net/).
 
 ## Configuration file format
 

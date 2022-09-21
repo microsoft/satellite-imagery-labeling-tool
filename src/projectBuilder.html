@@ -39,7 +39,7 @@
                 <h2>Step 1: Project details</h2>
 
                 <label for="projectName" class="topLabel" title="A unique name for the annotaiton project.">Project Name (required)</label>
-                <input id="projectName" type="text" data-binding="project_name"/>
+                <input id="projectName" type="text" data-binding="project_name" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');"/>
 
                 <div><label for="instructions" class="topLabel" title="Any guidance you would like to provide end users who are doing the annotation.">User instructions</label> <span>(<a href="https://en.wikipedia.org/wiki/Markdown" target="_blank">Markdown supported</a>)</span></div>
                 <textarea id="instructions" data-binding="instructions"></textarea>

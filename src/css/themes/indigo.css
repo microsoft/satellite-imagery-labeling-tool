@@ -1,0 +1,16 @@
+:root {
+    --header_bg_color: white;
+    --main_bg_color: white;
+    --nav_bg_color: #3f51b5; 
+    --nav_color: white;
+    --nav_enabled_color: black;
+    --nav_enabled_bg_color: #ccc;
+    --nav_hover_bg_color: #ccc;
+    --title_color: #3f51b5;
+    --font_color: #666;
+    --textarea_color: black;
+    --textarea_bg_color: white;
+    --btn_primary_color: #3f51b5;
+    --btn_bg_color: white;
+    --btn_hover_bg_color: #666;
+}

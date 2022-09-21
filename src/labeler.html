@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="shortcut icon" href="./assets/earth.ico"/>
+
+	<title>Spatial imagery labeler tool</title>
+
+	<!-- Add Azure Maps CSS files. -->
+	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.css"/>
+	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.css" />
+
+	<!-- Add fonts CSS files. -->
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&v=1656088853827">
+
+	<!-- Add App CSS files. -->
+	<link rel="stylesheet" href="css/themes/indigo.css"/>
+	<link rel="stylesheet" href="css/layout.css"/>
+	<link rel="stylesheet" href="css/labeler.css"/>
+</head>
+<body>
+	<header>
+		<h1 id="appTitle"></h1>
+		<span id="appSubtitle">Spatial imagery labeling tool</span>
+	</header>
+
+	<div class="main w3-row">
+	  	<div class="navbar" style="width:50px"></div>
+	  	<div class="flyout">
+			<div class="flyout-header">
+				<span></span>
+				<button class="icon-btn flyout-header-close-btn" type="button" aria-label="Close flyout"><i class="material-symbols-outlined">close</i></button>
+			</div>
+            <div class="flyout-content">
+
+				<div id="importDataCard" style="display:none">
+					<input type="file" id="loadLocalTaskFile" accept=".geojson,.json,.js"/>
+					<button id="loadLocalTask" class="icon-btn-round" type="button"><i class="material-symbols-outlined">lan</i><span>Local task file</span></button>
+
+					<input type="file" id="loadLocalDataFile" accept=".geojson,.geojsonl,.xml,.kml,.kmz,.zip,.gml,.gpx,.georss,.csv,.txt,.tab,.pipe,.json,.js"/>
+					<button id="loadLocalData" class="icon-btn-round" type="button"><i class="material-symbols-outlined">database</i><span>Local data file</span></button>
+
+					<button id="loadOsmWizard" class="icon-btn-round" type="button"><i class="material-symbols-outlined">auto_activity_zone</i><span>OSM Overpass Wizard</span></button>
+				</div>
+
+				<div id="importWizard" style="display:none">
+					<label for="osmScripts">Load existing script</label>
+					<select id="osmScripts"></select>
+
+					<label>Overpass Turbro query</label>
+					<textarea></textarea>
+
+					<label for="osmServers">Server</label>
+					<select id="osmServers"></select>
+
+					<ul>
+						<li><a id="overpass-link" target="_blank">Overpass Turbo website</a></li>
+						<li><a id="osm-link" target="_blank">OSM website</a></li>
+					</ul>
+
+					<span>Be sure to set classes before importing.</span>
+					<button class="text-btn-round" type="button">Import</button>
+				</div>
+
+				<div id="layersCard" style="display:none">
+					<label for="layerCardLayerList">Layer List</label>
+					<div id="layerCardLayerList"></div>
+
+					<label>Filters</label>
+					<table>
+						<tr title="Increase or reduce the brightness of the image.">
+							<td>Brightness</td>
+							<td>
+								<form oninput="MaxBrightness.value=maxBrightness.value">
+									<input type="range" id="maxBrightness" value="1" min="0" max="1" step="0.1"/>
+									<output name="MaxBrightness" for="maxBrightness">1</output>
+								</form>
+							</td>
+						</tr>
+						<tr title="Increase or reduce the contrast of the image.">
+							<td>Contrast</td>
+							<td>
+								<form oninput="Contrast.value=contrast.value">
+									<input type="range" id="contrast" value="0" min="-1" max="1" step="0.1"/>
+									<output name="Contrast" for="contrast">0</output>
+								</form>
+							</td>
+						</tr>
+						<tr title="Rotates hues around the color wheel.">
+							<td>Hue Rotation</td>
+							<td>
+								<form oninput="HueRotation.value=hueRotation.value">
+									<input type="range" id="hueRotation" value="0" min="0" max="360" step="1"/>
+									<output name="HueRotation" for="hueRotation">0</output>
+								</form>
+							</td>
+						</tr>
+						<tr title="Increase or reduce the saturation of the image.">
+							<td>Saturation</td>
+							<td>
+								<form oninput="Saturation.value=saturation.value">
+									<input type="range" id="saturation" value="0" min="-1" max="1" step="0.1"/>
+									<output name="Saturation" for="saturation">0</output>
+								</form>
+							</td>
+						</tr>
+					</table>
+
+					<input type="button" class="text-btn-round" value="Reset filters"/>
+
+					<button class="text-btn-round" type="button">+Add new layer(s)</button>
+				</div>
+
+				<div id="saveCard" style="display:none">
+					<label for="save-file-name">File name</label>
+					<input id="save-file-name" type="text"/>
+
+					<label for="save-file-format">File format</label>
+					<select id="save-file-format">
+						<option>CSV</option>
+						<option selected="selected">GeoJSON</option>
+						<option>GeoJSONL</option>
+						<option>GeoRSS</option>
+						<option>GML</option>
+						<option>GPX</option>
+						<option>KML</option>
+						<option>KMZ</option>							
+						<option>Pipe delimited</option>
+						<option>Tab delimited</option>
+					</select>
+					
+					<label><input type="checkbox" checked="checked"/> Minimize exported properties</label>
+
+					<button class="text-btn-round" type="button">Save</button>
+				</div>
+
+				<div id="screenshotCard" style="display:none">
+					<label for="screenshot-file-name">File name</label>
+					<input id="screenshot-file-name" type="text"/>
+
+					<label for="screenshot-title">Title (optional)</label>
+					<input id="screenshot-title" type="text"/>
+					
+					<label><input type="checkbox" value="legend"/> Include legend</label>
+					<label><input type="checkbox" value="stats"/> Include stats</label>
+
+					<button class="text-btn-round" type="button">Save</button>
+				</div>
+
+				<div id="settingsCard" style="display:none;">
+					<label><input id="fill_polygons" type="checkbox" checked="checked" title="Fill in the area of polygons."/> Fill polygons</label>
+					<label><input id="snapGridEnabled" type="checkbox" checked="checked" title="Have shape coordinates snap to a reference grid for better alignment."/> Enable snap grid</label>
+					<label><input id="continuousDrawing" type="checkbox" checked="checked" title="Be able to draw one shape after another."/> Continuous drawing</label>
+					<label><input id="continuousDelete" type="checkbox" checked="checked" title="Be able to delete one shape after another."/> Continuous delete</label>
+					<label><input id="shapeDragEnabled" type="checkbox" title="Allow dragging of shapes when editting."/> Shape drag enabled</label>
+					<label><input id="shapeRotateEnabled" type="checkbox" title="Allow rotating of shapes when editting."/> Shape rotate enabled</label>
+
+					<br/>
+					<label for="drawingModeSelector">Drawing mode</label>
+					<select id="drawingModeSelector">
+						<option>click</option>
+						<option>freehand</option>
+						<option selected="selected">hybrid</option>
+					</select>
+
+					<label for="app-theme">Color Theme</label>
+					<select id="app-theme">
+						<option>Dark</option>
+						<option>Light</option>
+						<option selected="selected">Indigo</option>
+					</select>
+
+					<input type="button" id="clearCacheBtn" class="text-btn-round" value="Delete cached data" />
+				</div>
+
+				<div id="instructionsCard" style="display:none">
+					<div id="instructions"></div>
+					<div>
+						<a href="https://github.com/microsoft/satellite-imagery-labeling-tool/docs/Labeler.md" target="_blank">Full documentation</a>
+						<br/><br/>
+						<b>Map instructions</b>
+						<ul>
+							<li><a href="https://docs.microsoft.com/azure/azure-maps/map-accessibility#navigating-the-map" target="_blank">Navigating the map</a></li>
+							<li><a href="https://docs.microsoft.com/azure/azure-maps/drawing-tools-interactions-keyboard-shortcuts" target="_blank">How to draw shapes.</a></li>
+					</div>
+				</div>
+
+				<div id="stats" style="display:none"></div>
+			</div>
+      	</div>
+	  	<div class="main-content">
+			<div id="myMap"></div>
+		</div>
+	</div>
+
+	<div id="osmLoadingScreen" style="display:none">
+		<button class="text-btn-round" type="button">Cancel OSM Overpass Wizard import</button> 	
+	</div>
+
+	<!-- Add Azure Maps libraries -->
+	<script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.js"></script>
+    <script src="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.js"></script>
+    <script src="https://atlas.microsoft.com/sdk/javascript/spatial/0/atlas-spatial.min.js"></script>
+	
+	<!-- Add 3rd party libraries libraries -->
+	<script src="libs/azure-maps-image-exporter.min.js"></script>
+	<script src="libs/azure-maps-bring-data-into-view-control.min.js"></script>
+	<script src="libs/localForage.min.js"></script>
+	<script src="libs/marked.min.js"></script>
+	<script src='libs/turf.min.js'></script>
+
+	<!-- Load the app module. -->
+	<script type="module">
+        import { LabelerApp } from './modules/labeler.js';
+		window.app = new LabelerApp();
+	</script>
+</body>
+</html>

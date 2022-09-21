@@ -1,135 +1,62 @@
-# Satellite imagery annotation tool
+# Spatial imagery labeling toolkit
 
-This is a lightweight web-interface for creating and sharing vector annotations over satellite/aerial imagery scenes.
+![Version 2](https://img.shields.io/badge/Version-2.0.0-green.svg)
 
-Users can select a class from the class list, add polygon and point label annotations over the imagery, then download the layer of annotations as a GeoJSON file that can be easily integrated with other GIS workflows. See the [live demo](https://satelliteimagerydemostg.z5.web.core.windows.net/) or screenshot below for an example:
+This is a lightweight web-interface for creating and sharing vector labels (lines or polygons) over satellite/aerial imagery scenes. This project includes the following tools:
 
-<p align="center">
-    <img src="images/example_screenshot.jpg" width="800"/>
-</p>
+- [Project builder](src/projectBuilder.html) - Allows you to specify an area of interest, select the imagery layers that can be used for reference, break the area up into chuncks and generate tasks files that can be assigned to those who will be doing the labeling. For more details, see the [Project builder documentation](docs/Project-builder.md).
+  - Easily break up an area of interest into smaller subsets that can be assigned to individuals via a task file. 
+- [Labeler](src/labeler.html) - Loads a task file for an labeling project (annotation). For more details, see the [Labeler documentation](docs/Labeler.md).
+  - Automatically caches data in local browser storage (does not leave your machine) to help prevent data lose from accidental browser refresh or closer. Makes it easy to come back later and continue where you left off. Supports multiple labeling projects by seperating the data by the projects task name. [Learn more](docs/Labeler.md#auto-save-feature).
+  - Import existing data from local geospatial files. Supports: GeoJSON, GeoJSONL, KML, KMZ, GeoRSS, GPX, GML, CSV (comma, tab, or pipe delimited). 
+  - Easily import existing data from Open Street Maps via the [Overpass turbo API](https://overpass-turbo.eu). Avoids loading in any data for areas that already have drawn features.
+- [Project viewer](src/projectViewer.html) - View and merge the results from the project. See stats and easily identify which areas have little to no labels. For more details, see the [Project viewer documentation](docs/Project-viewer.md).
 
-## Demo
+Also see the [Documentation](docs/README.md) and the [Spatial imagery ML Jupyter notebook example](example/).
 
-There is a demo running the `example.json` file [here](https://satelliteimagerydemostg.z5.web.core.windows.net/).
+![Screenshot of the spatial imagery labeling tool](docs/assets/Labaler.png)
 
-## Configuration file format
+[Learn more about Microsoft AI](https://www.microsoft.com/ai)
 
-The tool uses config files passed via the "config" URL parameter to run different "instances", e.g.: `https://server.com/index.html?config=example.json` loads the "example.json" file. The below shows the format of the config file:
-```js
-{
-    "classes": {  // the list of (class name, colors) that will be shown on the frontend
-        "Road": "#1976D2",
-        "Water": "#757575",
-        "Building": "#BA68C8",
-        "Completed section": "#CCCCCC"  // The class "Completed section" is a special class that can be used to indicate areas that have already been labeled. If this class is included you can toggle the visibility of polygons labeled as this class independently of the other annotations.
-    },
-    "center": [47.631850578394406, -122.15389251708986],  // the latitude and longitude of the initial map view
-    "boundingBox": [[47.57976811421671, -122.23731994628905], [47.68573021131587, -122.07115173339844]],  // the bounding box for which the basemap is valid
-    "layerTitle": "NAIP Imagery",  // the title of the configuration
-    "location": "Seattle, Washington, USA",  // the name of the AOI that the basemap covers
-    "basemap": "https://planetarycomputer.microsoft.com/api/data/v1/mosaic/tiles/87b72c66331e136e088004fba817e3e8/WebMercatorQuad/{z}/{x}/{y}?asset_bidx=image|1,2,3&assets=image&collection=naip&format=png", // URL pointing to the basemap; this can be anything that `L.tileLayer` can parse
-    "attribution": "USDA NAIP Imagery", // attribution string to display with the map
-    "tms": false // whether the basemap is in a TMS format
-}
-```
+**NOTE:** Version 1 of this project uses a different file schema that is not compatible with version 2. You can download version 1 of this project [here](https://github.com/microsoft/satellite-imagery-labeling-tool/releases/tag/public).
 
+## Additional Features
 
-## Example of using cloud optimized GeoTIFFs (COGs) as a basemap
+- Support for color themes to align with user preferences.
+- Local settings saved so users only have to set their preference once and have those presist across multiple sessions.
 
-If you have satellite/aerial imagery stored in a cloud optimized GeoTIFF format on the web (e.g. in a Azure blob storage container or S3 bucket) you can use [TiTiler](https://developmentseed.org/titiler/) to render it on-the-fly and use it seamlessly with this tool. 
+Unlock [enhanced functionality with Azure Maps](docs/Layers.md#enhanced-functionality-with-azure-maps)
+  - High resolution global satellite imagery.
+  - Map labels and points of interest. 
+  - Location search.
+  - Enhanced accessibility (screen reader) capabilities.
 
+## Potential Roadmap
 
-### Install and run TiTiler
+The following are some ideas to take this project further:
 
-TiTiler can be installed with `pip`. See more options on the [TiTiler documentation page](https://developmentseed.org/titiler/).
+- Consider integrating Azure Planetary Computer services. Import imagery layers and/or vector data.
+- Add an orthogonalize polygon/squaring option in the labeler to help make drawn features look nicer.
+- Magic wand drawing tool that uses a flood fill algorithm on the imagery to generate polygons based on the likeness of nearby pixels.
+- Potentially add an option to use fill patterns for features to visualize the secondary class while color is used for th primary class. Alternatively use a fill pattern for the primary class as an alternative to color for better accessibility support for those who are color blind.
 
-```
-pip install -U pip
-pip install uvicorn
-pip install titiler.{package}
-```
-
-TiTiler can then be run as a server process that listens on some port (**note**, the machine that you run TiTiler on should be accessible from elsewhere on the web).
-```
-uvicorn --host 0.0.0.0 --port <PORT> titiler.application.main:app
-```
-See other ways of deploying TiTiler on [Azure](https://developmentseed.org/titiler/deployment/azure/) or [AWS](https://developmentseed.org/titiler/deployment/aws/intro/).
-
-
-### Create a config file that uses a TiTiler instance as a basemap
-
-We assume that we have:
-- A server, "example.com", that is running a web server on port 80 (the default) that includes the files in this repo in the root directory (i.e. that http://example.com/index.html serves the file from this repo).
-- A server, "example.com", that is running TiTiler on port 8888. Note, that this server does not necessarily have to be running on the same machine as the web server.
-- A COG file either hosted on _some_ web server (can be on the local server, in the cloud, etc.). For example can use a NAIP aerial imagery COG hosted by Microsoft's [Planetary Computer](https://planetarycomputer.microsoft.com/) -- https://naipeuwest.blob.core.windows.net/naip/v002/fl/2019/fl_60cm_2019/28080/m_2808060_sw_17_060_20191215.tif.
-
-Create the following "test.json" config file on the web server machine:
-```js
-{
-    "classes": {
-        "Road": "#1976D2",
-        "Water": "#757575",
-        "Building": "#BA68C8",
-        "Completed section": "#CCCCCC"
-    },
-    "center": [28.031249, -80.593752],
-    "boundingBox": [[27.997976, -80.627296], [28.064522, -80.560208]],
-    "layerTitle": "TiTiler + NAIP example",
-    "location": "Florida, USA",
-    "basemap": "http://example.com:8888/cog/tiles/{z}/{x}/{y}.jpg?url=https://naipeuwest.blob.core.windows.net/naip/v002/fl/2019/fl_60cm_2019/28080/m_2808060_sw_17_060_20191215.tif",
-    "attribution": "USDA NAIP Imagery",
-    "tms": false
-}
-```
-
-Finally, you should be able to navigate to "http://example.com/index.html?config=test.json" to create annotations over the NAIP imagery!
-
+Have a feature request? Use the Issues tab of this project repo.
 
 ## List of third party javascript libraries/versions
 
-We have copied the source of the following library/versions into this repository:
+This project has directly imported and hosted versions of the following third party javascript libraries. This project purposely avoids using NPM and other developer tools and frameworks to keep things simple, so that anyone can easily get this project up and running locally (many users will be data and AI people, not developers).
 
-- [leaflet 1.3.1](https://github.com/Leaflet/Leaflet) (BSD-2-Clause License)
-  - `js/leaflet.js`
-  - `css/leaflet.css`
-  - `css/images/layers*.png`
-  - `css/images/marker*.png`
-- [NOTY 3.1.4](https://github.com/needim/noty) (MIT License)
-  - `js/noty.js`
-  - `css/noty.css`
-- [jquery 3.3.1](https://github.com/jquery/jquery) (MIT License)
-  - `js/jquery-3.3.1.min.js`
-- [leaflet FileLayer 1.2.0](https://github.com/makinacorpus/Leaflet.FileLayer) (MIT License)
-  - Modified version of `js/leaflet.filelayer.js`:
-    - Removed features depending on togeoson.js
-    - Changed component tag from `<a>` to `<button>` for styling puprposes
-    - Removed leaflet-zoom css for styling purposes
-- [Leaflet.Range](https://github.com/consbio/Leaflet.Range) ([custom license](https://github.com/consbio/Leaflet.Range/blob/master/LICENSE))
-  - Modified to include slider label instead of icon
-  - `js/L.Control.Range.js`
-  - `css/L.Control.Range.css`
-- [leaflet EasyButton 2.4.0](https://github.com/CliffCloud/Leaflet.EasyButton) (MIT License)
-  - `js/easy-button.js`
-  - `css/easy-button.css`
-- [leaflet draw 1.0.4](https://github.com/Leaflet/Leaflet.draw) (MIT License)
-  - `js/leaflet.draw.js`
-  - `css/leaflet.draw.css`
-  - `css/images/spritesheet*`
-- [font-awesome 4.1.0](https://github.com/FortAwesome/Font-Awesome) (Icons are CC BY 4.0, fonts are SIL OFL 1.1, code is MIT License, see [here](https://github.com/FortAwesome/Font-Awesome/blob/master/LICENSE.txt))
-  - `fonts/*`
-  - `css/font-awesome.min.css`
-- [leaflet ruler 1.0.0](https://github.com/gokertanrisever/leaflet-ruler) (MIT License)
-  - Modified version of `js/leaflet-ruler.js`:
-    - Changed the image directory to `css/images/`
-  - `css/leaflet-ruler.css`
-  - `css/images/icon.png`
-  - `css/images/icon-colored.png`
-
+- [Azure Maps Image Exporter 0.0.2](https://github.com/Azure-Samples/azure-maps-image-exporter) - A helper library for generating screenshots of an Azure Maps control.
+- [Azure Maps Bring Data Into View Control 0.0.2](https://github.com/Azure-Samples/azure-maps-bring-data-into-view-control) - Adds a button to the map that makes it easy to focus back to where your data is.
+- [JSZip v3.10.1](http://stuartk.com/jszip) - Library for reading and writing zip files.
+- [localForage 1.10.0](https://localforage.github.io/localForage) - Makes it easy to store data locally in the browser using a single API. For more information, see the [Labeler's Auto save documentation](docs/Labeler.md#auto-save-feature).
+- [Marked 4.0.18](https://github.com/markedjs/marked) - Adds support for markdown syntax, used by the instructions panel.
+- [osmtogeojson 3.0.0](https://github.com/tyrasd/osmtogeojson) - A library for converting OSM data into GeoJSON objects.
+- [TurfJS 6.5.0](https://turfjs.org/) - A library for performing advanced spatial calculations. 
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
 
 ## Contributing
 
@@ -145,11 +72,10 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
-
 ## Trademarks
 
 This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
 trademarks or logos is subject to and must follow 
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
+[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.

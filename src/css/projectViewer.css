@@ -1,0 +1,99 @@
+/* Styles used by the project viewer tool. */
+
+body {
+    background-color: var(--main_bg_color);
+}
+
+input,
+button {
+    margin: 5px 0;
+}
+
+h2 {
+    margin: 0 0 5px 0;
+}
+
+.main-content {
+    width: calc(100vw - 251px);
+}
+
+.side-panel {
+    position: relative;
+    float: left;
+    width: 230px;
+    height: 100%;
+    overflow: hidden;
+    padding: 10px;
+    border-right: 1px solid #ccc;
+    background-color: var(--main_bg_color) !important;
+}
+
+.side-panel label {
+    font-weight: bold;
+}
+
+#statsPanel {
+    max-height: calc(100vh - 400px);
+    overflow-y: auto;
+}
+
+.topLabel {
+    margin: 10px 0 5px 0;
+}
+
+#loadLocalProjectFile {
+    display: none;
+}
+
+#helpBtn {
+    margin-top: 10px;
+    float: right;
+    padding: 0 3px;
+}
+
+#helpBtn i {
+    padding: 0;
+    font-size: 20px;
+}
+
+.helpContent {
+    min-width: 400px;
+    text-align: left;
+}
+
+.legend {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.legend-item {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.legend-item span {
+    margin: 0 0 0 5px;
+}
+
+.legend-box {
+    stroke: #ccc;
+    stroke-linejoin: round;
+}
+
+.legend-box svg {
+    display: block;
+    margin: auto;
+}
+
+.popup-content {
+    padding: 15px;
+    max-height: 50vh;
+    overflow-y: auto;
+    user-select: text;
+    pointer-events: all;
+}

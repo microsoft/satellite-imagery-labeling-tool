@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="shortcut icon" href="./assets/earth.ico"/>
+    
+	<title>Spatial imagery labeling project builder</title>
+
+	<!-- Add Azure Maps CSS files. -->
+	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.css"/>
+	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.css" />
+
+	<!-- Add fonts CSS files. -->
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&v=1656088853827">
+
+	<!-- Add App CSS files. -->
+	<link rel="stylesheet" href="css/themes/indigo.css"/>
+	<link rel="stylesheet" href="css/layout.css"/>
+    <link rel="stylesheet" href="css/dialogs.css"/>
+	<link rel="stylesheet" href="css/projectBuilder.css"/>
+</head>
+<body>
+	<header>
+		<h1 id="appTitle">Spatial imagery labeling project builder</h1>
+
+        <button id="helpBtn" title="Help" class="text-btn-round" type="button"><i class="material-symbols-outlined">question_mark</i></button>      
+
+        <a class="text-btn-round" href="projectViewer.html" target="_blank">Open project viewer</a>
+	</header>
+
+	<div class="main w3-row">
+	  	<div class="card-panel">
+            <div id="step-1" class="stepCard">                
+
+                <input type="file" id="loadLocalProjectFile" accept=".zip"/>
+                <button id="loadProjectBtn" class="text-btn-round" type="button">Load existing project</button>
+                
+                <h2>Step 1: Project details</h2>
+
+                <label for="projectName" class="topLabel" title="A unique name for the annotaiton project.">Project Name (required)</label>
+                <input id="projectName" type="text" data-binding="project_name"/>
+
+                <div><label for="instructions" class="topLabel" title="Any guidance you would like to provide end users who are doing the annotation.">User instructions</label> <span>(<a href="https://en.wikipedia.org/wiki/Markdown" target="_blank">Markdown supported</a>)</span></div>
+                <textarea id="instructions" data-binding="instructions"></textarea>
+
+                <label for="instructionsPreview">Instructions preview</label>
+                <div id="instructionsPreview"></div>
+
+                <label title="Show the labeler display the instructions when it loads."><input type="checkbox" checked="checkbox" data-binding="instructions_on_load"/> Show instructions on load </label>
+
+                <label title="Do you want users to be able to import existing data from Open Street Maps?"><input type="checkbox" checked="checkbox" data-binding="allow_wizard"/> Allow OSM overpass wizard</label>
+
+                <label for="drawingType" class="topLabel">Allowed drawing type(s)</label>
+                <select id="drawingType" data-binding="drawing_type">
+                    <option value="all" title="Allow drawing lines, polygons, rectangles, and circles.">All</option>      
+                    <option value="lines" title="Allow drawing lines.">Lines</option>
+                    <option value="polygons" title="Allow drawing polygons, rectangles, and circles." selected>Polygons</option>
+                    <option value="rectangles" title="Allow drawing rectangles only.">Rectangles only</option>
+                </select>
+
+                <div class="stepBtnContainer">
+                    <button class="text-btn-round nextBtn" type="button" disabled>Next</button>
+                </div>
+
+                <div class="stepOfIndex">Step 1 of 5</div>
+            </div>
+
+            <div id="step-2" class="stepCard" style="display:none">
+                <h2>Step 2: Add layers</h2>
+
+                <label for="layerCardLayerList" class="topLabel">Layer List</label>
+                <div id="layerCardLayerList"></div>
+
+                <button class="text-btn-round" type="button">+Add new layer(s)</button>
+                
+                <div class="stepBtnContainer">
+                    <button class="text-btn-round backBtn" type="button">Back</button>
+                    <button class="text-btn-round nextBtn" type="button" disabled>Next</button>
+                </div>
+
+                <div class="stepOfIndex">Step 2 of 5</div>
+            </div>
+
+            <div id="step-3" class="stepCard" style="display:none">
+                <h2>Step 3: Create focus area</h2>
+
+                Draw the project area to focus on.
+
+                <div id="drawingToolbarContainer"></div>                
+
+                <h3>Gridding options</h3>
+
+                <label for="importAreaFile" class="topLabel">Or import area from local file.</label>              
+                <input type="file" id="importAreaFile" accept=".geojson,.geojsonl,.xml,.kml,.kmz,.zip,.gml,.gpx,.georss,.csv,.txt,.tab,.pipe,.json,.js"/>
+                <button id="importAreaBtn" class="text-btn-round" type="button">Import area</button>
+                
+                <label for="gridUnits" class="topLabel">Grid size units</label>
+                <select id="gridUnits">
+                    <option>feet</option>
+                    <option selected="selected">kilometers</option>
+                    <option>meters</option>
+                    <option>miles</option>
+                </select>
+
+                <label for="gridSize" class="topLabel">Grid size</label>
+                <input id="gridSize" type="number" value="1" min="0.1" step="0.1"/>
+
+                <div class="stepBtnContainer">
+                    <button class="text-btn-round backBtn" type="button">Back</button>
+                    <button class="text-btn-round nextBtn" type="button" disabled>Next</button>
+                </div>
+
+                <div class="stepOfIndex">Step 3 of 5</div>
+            </div>
+
+            <div id="step-4" class="stepCard" style="display:none">
+                <h2>Step 4: Define classes</h2>
+
+                <label for="classDisplayName1" class="topLabel" title="The display name for primary class.">Primary class display name</label>
+                <input id="classDisplayName1" type="text" value="Primary class" data-binding="primary_classes.display_name"/>
+
+                <label for="classPropName1" class="topLabel" title="The property name to store the primary class value in.">Primary class property name</label>
+                <input id="classPropName1" type="text" value="class" data-binding="primary_classes.property_name"/>
+
+                <label for="classTable1" class="topLabel">Primary classes</label>
+                <div><input id="newClass1" type="text" title="New class name"/> <button id="addClassBtn1" class="icon-btn add-btn" type="button" title="Create a new primary class"><i class="material-symbols-outlined">add</i></button></div>
+
+                <table id="classTable1" class="classTable"></table>
+
+                <label><input id="captureSecondaryClass" type="checkbox"/> Capture secondary class</label>
+
+                <div id="secondaryClassInput" style="display:none">
+                    <label for="classDisplayName2" class="topLabel" title="The display name for secondary class.">Secondary class display name</label>
+                    <input id="classDisplayName2" type="text" value="Secondary class" data-binding="secondary_classes.display_name"/>
+
+                    <label for="classPropName2" class="topLabel" title="The property name to store the secondary class value in.">Secondary class property name</label>
+                    <input id="classPropName2" type="text" value="secondary_class" data-binding="secondary_classes.property_name"/>
+
+                    <label for="classTable2" class="topLabel">Secondary classes</label>
+                    <div><input id="newClass2" type="text" title="New class name"/> <button id="addClassBtn2" class="icon-btn add-btn" type="button" title="Create a new secondary class"><i class="material-symbols-outlined">add</i></button></div>
+                    <table id="classTable2" class="classTable"></table>
+                </div>
+
+                <div class="stepBtnContainer" class="topLabel">
+                    <button class="text-btn-round backBtn" type="button">Back</button>
+                    <button class="text-btn-round nextBtn" type="button" disabled>Next</button>
+                </div>
+
+                <div class="stepOfIndex">Step 4 of 5</div>
+            </div>
+
+            <div id="step-5" class="stepCard" style="display:none">
+                <h2>Step 5: Complete</h2>
+
+                <label class="topLabel"><input id="includeTaskFileLinks" type="checkbox"/> Include task file links in summary</label>
+
+                <div id="baseUrlContainer" style="display:none">
+                    <label for="baseUrlInput" class="topLabel">Url path to task file folder</label>
+                    <input id="baseUrlInput" type="text" value=""/>
+                </div>
+
+                <button class="text-btn-round downloadBtn" type="button">Download project files</button>
+
+                <div class="stepBtnContainer" class="topLabel">
+                    <button class="text-btn-round backBtn" type="button">Back</button>
+                </div>
+
+                <div class="stepOfIndex">Step 5 of 5</div>
+            </div>
+      	</div>
+	  	<div class="main-content">
+			<div id="myMap"></div>
+		</div>
+	</div>
+
+	<!-- Add Azure Maps libraries -->
+	<script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.js"></script>
+    <script src="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.js"></script>
+    <script src="https://atlas.microsoft.com/sdk/javascript/spatial/0/atlas-spatial.js"></script>
+	
+	<!-- Add 3rd party libraries libraries -->
+	<script src="libs/azure-maps-image-exporter.min.js"></script>
+	<script src='libs/turf.min.js'></script>    
+	<script src="libs/marked.min.js"></script>
+    <script src="libs/jszip.min.js"></script>
+
+	<!-- Load the app module. -->
+	<script type="module">
+        import { ProjectBuilderApp } from './modules/projectBuilder.js';
+		window.app = new ProjectBuilderApp();
+	</script>
+</body>
+</html>

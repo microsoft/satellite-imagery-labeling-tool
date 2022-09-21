@@ -1,0 +1,91 @@
+/* Styles used by the dialog controls. */
+
+.dialog-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10000000;
+}
+
+.dialog-background {
+    position:absolute;
+    top: 0;
+    left:0;
+    background-color: rgba(0,0,0,0.5);
+    width: 100vw;
+    height: 100vh;
+}
+
+.dialog-card {
+    position: absolute;
+    left: 50vw;
+    top: 50vh;
+    background-color: white;
+    padding: 10px;
+    transform: translate(-50%, -50%);
+    display: table;
+    border-radius: 5px;
+}
+
+.dialog-title {
+    width: 100%;
+    font-size: 18px;
+}
+
+.add-layer-dialog input[type="number"] {
+    width: 75px;
+}
+
+.dialog-content input[type="text"] {
+    margin: unset;
+    height: 20px;
+}
+
+.add-layer-dialog {
+    font-weight: bold;
+}
+
+.add-layer-dialog tr td {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.bounds tr td:first-child, .corners tr td:first-child {
+    min-width: 0;
+}
+
+.add-layer-dialog textarea {
+    width: 400px;
+    height: 200px;
+    resize: none;
+}
+
+.dialog-content {
+    display: block;
+    text-align: center;
+}
+
+.dialog-content table {
+    text-align: left;
+}
+
+.addLayerBtn {
+    width: 100px;
+}
+
+.save-results-dialog{
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+}
+
+.save-results-dialog label {
+    margin: 5px 0;
+}
+
+.save-results-dialog button {
+    width: 50px;
+    text-align: center;
+}

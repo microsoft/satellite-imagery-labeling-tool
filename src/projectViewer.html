@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="shortcut icon" href="./assets/earth.ico"/>
+    
+	<title>Spatial imagery labeling project viewer</title>
+
+	<!-- Add Azure Maps CSS files. -->
+	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.css"/>
+	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.css" />
+
+	<!-- Add fonts CSS files. -->
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&v=1656088853827">
+
+	<!-- Add App CSS files. -->
+	<link rel="stylesheet" href="css/themes/indigo.css"/>
+	<link rel="stylesheet" href="css/layout.css"/>
+    <link rel="stylesheet" href="css/dialogs.css"/>
+	<link rel="stylesheet" href="css/projectViewer.css"/>
+</head>
+<body>
+	<header>
+		<h1 id="appTitle">Spatial imagery labeling project viewer</h1>
+
+        <button id="helpBtn" title="Help" class="text-btn-round"><i class="material-symbols-outlined">question_mark</i></button>
+
+		<a class="text-btn-round" href="projectBuilder.html" target="_blank">Open project builder</a>
+	</header>
+
+	<div class="main w3-row">
+	  	<div class="side-panel">     
+            <input type="file" id="loadLocalProjectFile" accept=".zip"/>
+            <button id="loadProjectBtn" class="text-btn-round">Load existing project</button>
+
+            <button id="exportBtn" class="text-btn-round">Merge and export results</button>
+
+            <hr/>
+            <br/><br/>
+            <label>View: <select id="focusSelector">
+                <option value="tasks">Task area stats</option>
+                <option value="primary">Primary class results</option>
+                <option value="secondary" disabled>Secondary class results</option>
+            </select></label>  
+
+            <br/><br/>
+            <label>Project stats</label>
+            <br/><br/>
+            <div id="statsPanel"></div>
+      	</div>
+	  	<div class="main-content">
+			<div id="myMap"></div>
+		</div>
+	</div>
+
+	<!-- Add Azure Maps libraries -->
+	<script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.js"></script>
+    <script src="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.js"></script>
+    <script src="https://atlas.microsoft.com/sdk/javascript/spatial/0/atlas-spatial.js"></script>
+	
+	<!-- Add 3rd party libraries libraries -->
+	<script src="libs/azure-maps-image-exporter.min.js"></script>  
+	<script src="libs/marked.min.js"></script>
+    <script src="libs/jszip.min.js"></script>
+
+	<!-- Load the app module. -->
+	<script type="module">
+        import { ProjectViewerApp } from './modules/projectViewer.js';
+		window.app = new ProjectViewerApp();
+	</script>
+</body>
+</html>

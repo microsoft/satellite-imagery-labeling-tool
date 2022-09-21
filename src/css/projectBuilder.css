@@ -1,0 +1,173 @@
+/* Styles used by the project builder tool. */
+
+body {
+    background-color: var(--main_bg_color);
+}
+
+input,
+button {
+    margin: 5px 0;
+}
+
+.card-panel {
+    position: relative;
+    float: left;
+    width: 230px;
+    height: 100%;
+    overflow: hidden;
+    padding: 10px;
+    border-right: 1px solid #ccc;
+    background-color: var(--main_bg_color) !important;
+}
+
+.stepCard {
+    display: grid;
+}
+
+.stepOfIndex {
+    left: 0;
+    text-align: center;
+    bottom: 30px;
+    position: absolute;
+    width: 250px;
+}
+
+.stepBtnContainer {
+    position: absolute;
+    left: 0;
+    bottom: 50px;
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.backBtn {
+    float: left;
+    width: 80px;
+}
+
+.nextBtn {
+    float: right;
+    width: 80px;
+}
+
+.topLabel {
+    margin: 10px 0 5px 0;
+}
+
+.deleteBtn {
+    color: red;
+}
+
+.search-btn i {
+    margin: -5px 0 0 0;
+}
+
+#loadLocalProjectFile {
+    display: none;
+}
+
+#loadProjectBtn {    
+    margin-top: 10px;
+    float:right;
+}
+
+#step-1 textarea,
+#instructionsPreview {
+    resize: none;
+    height: calc(50vh - 220px);
+    border: 1px solid #000;
+    overflow-y: auto;
+    margin: 5px 0 10px 0;
+}
+
+#instructionsPreview {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#drawingToolbarContainer {
+    margin-left: 40px;
+}
+
+#secondaryClassInput {
+    margin: 10px 0;
+    display: contents;
+}
+
+.add-btn,
+.delete-btn {
+    padding: 0;
+}
+
+.add-btn i {
+    padding: 0;
+    font-size: 22px;
+    color: #2C882B;
+}
+
+.delete-btn i {
+    padding: 0;
+    margin: 0;
+    font-size: 18px;
+    color: red;
+}
+
+#helpBtn {
+    margin-top: 10px;
+    float:right;
+    padding: 0 3px;
+}
+
+#helpBtn i {
+    padding: 0;
+    font-size: 20px;
+}
+
+.classTable table {
+    width: 100%;
+    border-spacing: 0;
+}
+
+.classTable td:first-child {
+    width: 20px;
+}
+
+.classTable td:nth-child(2) {
+    width: 160px;
+}
+
+input[type="color"] {
+    margin: 0;
+    width: 25px;
+    height: 25px;
+    padding: 0;
+}
+
+.helpContent {
+    min-width: 400px;
+    text-align: left;
+}
+
+#layerCardLayerList {
+    width: 100%;
+    border:1px solid #ccc;
+    max-height: calc(100vh - 300px);
+    overflow-y:auto;
+    overflow-x:hidden;
+    display:grid;
+}
+
+#layerCardLayerList label {
+    margin: 0 5px;
+}
+
+#layerCardLayerList span {
+    margin-left: 5px;
+}
+
+.main-content {
+    width: calc(100vw - 251px);
+}

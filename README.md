@@ -16,9 +16,9 @@ Also see the [Documentation](docs/README.md) and the [Spatial imagery ML Jupyter
 
 ![Screenshot of the spatial imagery labeling tool](docs/assets/Labaler.png)
 
-[Learn more about Microsoft AI](https://www.microsoft.com/ai)
-
 **NOTE:** Version 1 of this project uses a different file schema that is not compatible with version 2. You can download version 1 of this project [here](https://github.com/microsoft/satellite-imagery-labeling-tool/releases/tag/public).
+
+[Learn more about Microsoft AI](https://www.microsoft.com/ai)
 
 ## Additional Features
 

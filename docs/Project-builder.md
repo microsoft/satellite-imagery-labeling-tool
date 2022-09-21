@@ -6,7 +6,7 @@ The project builder is the tool used by a project administrator to define a labe
 
 ## Project Builder quickstart
 
-1. Open the [project builder tool](../src/projectBuilder.html). Note that if you have forked this project you URL will be different.
+1. Open the [project builder tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/projectBuilder.html). Note that if you have forked this project you URL will be different.
 2. There are 5 steps to complete. If you have an existing project saved that you want to open and edit, use the "Open existing project" button that appears in the first step.
 3. In step one, define the high level information for the project. 
     - Project name - Required. Specifies the name of the project. This is displayed in the top left corner of the labeler tool when the user loads one of the generated task files. You will not be able to move to the next step until this has been specified.

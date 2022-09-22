@@ -42,6 +42,14 @@ The following are some ideas to take this project further:
 
 Have a feature request? Use the Issues tab of this project repo.
 
+## Related projects
+
+Here are some related projects we recommend checking out:
+
+- [satellite-image-deep-learning](https://github.com/robmarkcole/satellite-image-deep-learning)
+- [TorchGeo](https://github.com/microsoft/torchgeo)
+- [GlobalMLBuildingFootprints](https://github.com/microsoft/GlobalMLBuildingFootprints)
+
 ## List of third party javascript libraries/versions
 
 This project has directly imported and hosted versions of the following third party javascript libraries. This project purposely avoids using NPM and other developer tools and frameworks to keep things simple, so that anyone can easily get this project up and running locally (many users will be data and AI people, not developers).

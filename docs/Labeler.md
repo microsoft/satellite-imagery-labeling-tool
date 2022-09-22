@@ -13,6 +13,7 @@ The labeler tool is the primary tool that those who will be reviewing the imager
 
 **TIPs:** 
 
+- The labeler can be used without a task file to create labels. No primary or secondary class will be assigned to the features. The OSM Overpass Wizard will use the viewable map area in it's query for data.
 - Unless disabled in the settings, the labeler will auto save the state of the labeling project as you use the tool. If you want to stop and come back later to complete your labeling, simply close the browser tab. The next time you load the tool with the task file, it will look for any saved data for that task. See the [Auto save feature](#auto-save-feature) section for more information. 
 - If you forgot to do this before hand you can easy update the classification of a shape by either clicking on it when out of drawing mode, and a popup will appear where you can change the individual classification. Alternatively, there are two buttons in the classification panel that allow for bulk updating by either allowing you to click on multiple features, or by drawing a rectangle to select the features to update.
 - If you move the map around and lose sight of your task area, use the "Bring your data into view" button in the bottom right corner just above the zoom buttons.

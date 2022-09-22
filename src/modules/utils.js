@@ -86,7 +86,7 @@ export class Utils {
                         Object.assign(f.properties, newProps);
                     }
 
-                    if (geometry) {
+                    if (geometry && geometry.type) {
                         r = turf.booleanIntersects(f.geometry, geometry);
                     } else {
                         r = true;

@@ -1073,7 +1073,7 @@ export class LabelerApp {
 
 		if (features && features.length > 0) {
 			if (filter) {
-				features = Utils.filterFeatures(r.features, cps.drawing_type, self.config.geometry, newProps);
+				features = Utils.filterFeatures(features, cp.drawing_type, self.config.geometry, newProps);
 			} else if (newProps) {
 				features.forEach(f => {
 					Object.assign(f.properties, newProps);

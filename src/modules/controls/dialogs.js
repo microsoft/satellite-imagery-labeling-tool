@@ -865,7 +865,10 @@ export class SaveResultsDialog {
 
             const allowedProps = ['source', 'task_name'];
             allowedProps.push(self.#primaryPropName);
-            allowedProps.push(self.#secondaryPropName);
+
+            if(self.#secondaryPropName){
+                allowedProps.push(self.#secondaryPropName);
+            }
 
             const data = self.#datasource.toJson();
 

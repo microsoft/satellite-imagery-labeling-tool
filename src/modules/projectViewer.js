@@ -152,7 +152,8 @@ export class ProjectViewerApp {
             const cp = self.#currentProject;
 
             if(cp){                
-                self.#saveResultsDialog.show(cp.aoi.properties.project_name, self.#resultSource, cp.aoi.properties.primary_classes.property_name, cp.aoi.properties.secondary_classes.property_name);
+                const sc = cp.aoi.properties.secondary_classes;
+                self.#saveResultsDialog.show(cp.aoi.properties.project_name, self.#resultSource, cp.aoi.properties.primary_classes.property_name, (sc)? sc.property_name : null);
             } else {
                 alert('No project loaded.');
             }

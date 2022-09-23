@@ -105,7 +105,7 @@ export class ProjectUtils {
                                         let name = f.properties[k];
                                         if(taskProps.primary_classes.names.indexOf(name) > -1){
                                             stats.primary[name] = stats.primary[name] + 1 || 1;
-                                        } else if(taskProps.secondary_classes.names && taskProps.secondary_classes.names.indexOf(name) > -1){
+                                        } else if(taskProps.secondary_classes && taskProps.secondary_classes.names && taskProps.secondary_classes.names.indexOf(name) > -1){
                                             stats.secondary[name] = stats.secondary[name] + 1 || 1;
                                         }
                                     });
@@ -131,8 +131,10 @@ export class ProjectUtils {
                         stats.primary[k] = stats.primary[k] + v || v;
                     });
 
-                    if(c.properties.secondary_classes.names) {
-                        c.properties.secondary_classes.names.forEach(k => {
+                    const sc = c.properties.secondary_classes;
+
+                    if(sc && sc.names) {
+                        sc.names.forEach(k => {
                             const v = c.properties.stats.secondary[k];
                             stats.secondary[k] = stats.secondary[k] + v || v;
                         });
@@ -159,7 +161,7 @@ export class ProjectUtils {
                 project.colors.primary = colorExp;
             }
 
-            if(secondary.names && secondary.names.length > 0) {
+            if(secondary && secondary.names && secondary.names.length > 0) {
                 //Create a match expression based on the primary classes property name.
                 const colorExp = ['match', ['get', secondary.property_name]];
 

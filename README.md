@@ -1,3 +1,13 @@
+---
+page_type: sample
+description: A lightweight web-interface for creating and sharing vector labels (lines or polygons) over satellite/aerial imagery scenes.
+languages:
+- javascript
+products:
+- azure
+- azure-maps
+---
+
 # Spatial imagery labeling toolkit
 
 ![Version 2](https://img.shields.io/badge/Version-2.0.0-green.svg)

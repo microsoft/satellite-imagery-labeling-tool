@@ -3,6 +3,7 @@ page_type: sample
 description: A lightweight web-interface for creating and sharing vector labels (lines or polygons) over satellite/aerial imagery scenes.
 languages:
 - javascript
+- python
 products:
 - azure
 - azure-maps

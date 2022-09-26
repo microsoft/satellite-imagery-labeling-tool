@@ -22,7 +22,7 @@ This is a lightweight web-interface for creating and sharing vector labels (line
   - Easily import existing data from Open Street Maps via the [Overpass turbo API](https://overpass-turbo.eu). Avoids loading in any data for areas that already have drawn features.
 - [Project viewer](https://microsoft.github.io/satellite-imagery-labeling-tool/src/projectViewer.html) - View and merge the results from the project. See stats and easily identify which areas have little to no labels. For more details, see the [Project viewer documentation](docs/Project-viewer.md).
 
-Also see the [Documentation](docs/README.md) and the [Spatial imagery ML Jupyter notebook example](example/).
+Also see the [Documentation](docs/README.md) and the [Spatial imagery ML Jupyter notebook example](example/training-example.ipynb).
 
 ![Screenshot of the spatial imagery labeling tool](docs/assets/Labaler.png)
 

@@ -1389,7 +1389,7 @@ export class LabelerApp {
 				props[cp.primary_classes.property_name] = classControl.getPrimaryClass();
 			}
 
-			if (!props[cp.secondary_classes.property_name]) {
+			if (cp.secondary_classes && cp.secondary_classes.property_name && !props[cp.secondary_classes.property_name]) {
 				props[cp.secondary_classes.property_name] = classControl.getSecondaryClass();
 			}
 

@@ -75,10 +75,14 @@ button {
 #step-1 textarea,
 #instructionsPreview {
     resize: none;
-    height: calc(50vh - 220px);
+    height: calc(50vh - 280px);
     border: 1px solid #000;
     overflow-y: auto;
     margin: 5px 0 10px 0;
+}
+
+#customDataServiceLabel {
+    margin-top: 5px;
 }
 
 #instructionsPreview {

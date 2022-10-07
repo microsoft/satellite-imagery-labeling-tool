@@ -30,6 +30,7 @@ export class LabelerApp {
 		maxBrightness: 1
 	};
 	#osmWizardWorker;
+	#cdWorker;
 	#featureSource = new atlas.source.DataSource();
 	#fillLayer;
 	#outlineLayer;
@@ -109,7 +110,7 @@ export class LabelerApp {
 			name: appSettings.autoSave.name
 		});
 
-		
+
 		self.#initSettingsPanel();
 
 		const hasAZMapAuth = Utils.isAzureMapsAuthValid(mapSettings.azureMapsAuth);
@@ -301,6 +302,101 @@ export class LabelerApp {
 
 		//Wire up OSM wizard
 		self.#initOsmWizard();
+
+		//Add a click event to the cancel button for the data importer.
+		const cancelImportBtn = document.querySelector('#customImportLoadingScreen button');
+		cancelImportBtn.onclick = self.#cancelDataImport;
+
+		const cds = self.config.properties.customDataService;
+		const cdsl = self.config.properties.customDataServiceLabel;
+
+		if (cds && cdsl && cds !== '' && cdsl !== '') {
+			document.getElementById('customImportBtn').style.display = '';
+			document.querySelector('#customImportBtn span').innerText = cdsl;
+		} else {
+			document.getElementById('customImportBtn').style.display = 'none';
+		}
+
+		//Handle custom data importer
+		document.getElementById('customImportBtn').onclick = () => {
+			const server = self.config.properties.customDataService;
+
+			if (server && server !== '') {
+				self.#idleDrawing();
+
+				//Complete the bulk edit phase.
+				self.#classControl.completeBulkEdit();
+
+				//get query values -> show loading screen -> run query in worker -> if success, load data and close flyout. if error, prompt user, leave flyout open.	
+
+				let cdWorker = self.#cdWorker;
+				if (!cdWorker) {
+					cdWorker = new Worker('workers/CustomDataWorker.js');
+					cdWorker.onmessage = self.#customImportResponded;
+					self.#cdWorker = cdWorker;
+				}
+
+				const map = self.map;
+				const cam = map.getCamera();
+				let bbox = cam.bounds;
+
+				const areaOfInterest = self.config.geometry;
+
+				if (areaOfInterest && areaOfInterest.type) {
+					bbox = atlas.data.BoundingBox.fromData(areaOfInterest);
+				} else if (cam.zoom < 12) {
+					alert('Zoom in more.');
+					return;
+				}
+
+				document.getElementById('customImportLoadingScreen').style.display = '';
+
+				const dt = self.config.properties.drawing_type;
+
+				//Use worker to filter data more using geospatial analysis.
+				cdWorker.postMessage({
+					server: server,
+					bbox: bbox,
+					aoi: areaOfInterest,
+					existingGeoms: self.#getSourceData(true).features,
+					allowLines: dt === 'lines' || dt === 'all',
+					allowPolygons: dt === 'polygons' || dt === 'all'
+				});
+
+				cancelImportBtn.focus();
+			}
+		};
+	}
+
+	/*
+	 * Event handler for when the custom data importer responds. `e.data` may contain and error property if the import failed. Otherwise it will be a feature collection of results.
+	 * @param {*} e Worker response object. `e.data` is either a feature collection, or an object with an error property.
+	 */
+	#customImportResponded = (e) => {
+		document.getElementById('customImportLoadingScreen').style.display = 'none';
+
+		//If there is an error, alert the user and do nothing else.
+		if (e.data.error) {
+			alert(e.data.error);
+			return;
+		}
+
+		//Import the features. No need to filter as that was done in the worker. 
+		this.#importFeatures(e.data, {
+			source: 'CustomDataImport'
+		}, false, true);
+	}
+
+	/**
+	 * Event handler that cancels the OSM wizard worker.
+	 */
+	#cancelDataImport = () => {
+		const self = this;
+		if (self.#cdWorker) {
+			self.#cdWorker.terminate();
+			self.#cdWorker = null;
+			document.getElementById('customImportLoadingScreen').style.display = 'none';
+		}
 	}
 
 	/** Initializes the layer panel. */
@@ -1167,6 +1263,14 @@ export class LabelerApp {
 			if (dm) {
 				self.#updateShapeColors();
 			}
+
+			//Set visibility of custom data service            
+			if (cp.customDataService && cp.customDataService !== '' && cp.customDataServiceLabel && cp.customDataServiceLabel !== '') {
+				document.getElementById('customImportBtn').style.display = '';
+				document.querySelector('#customImportBtn span').innerText = cp.customDataServiceLabel;
+			} else {
+				document.getElementById('customImportBtn').style.display = 'none';
+			}
 		}
 
 		self.#checkStorage();
@@ -1382,7 +1486,7 @@ export class LabelerApp {
 			} else if (cam.zoom < 12) {
 				alert('Zoom in more.');
 				return;
-			} 
+			}
 
 			const server = Utils.getSelectValue(osmServerElm);
 			const query = document.querySelector('#importWizard textarea').value;
@@ -1466,7 +1570,7 @@ export class LabelerApp {
 		const self = this;
 		const cp = self.config.properties;
 		const propName1 = cp.primary_classes.property_name;
-		const propName2 = (cp.secondary_classes)?cp.secondary_classes.property_name: null;
+		const propName2 = (cp.secondary_classes) ? cp.secondary_classes.property_name : null;
 
 		//Get geojson from drawing manager.
 		const json = self.#featureSource.toJson();
@@ -1479,7 +1583,7 @@ export class LabelerApp {
 		const allowedProps = ['source', 'task_name'];
 		allowedProps.push(propName1);
 
-		if(propName2){
+		if (propName2) {
 			allowedProps.push(propName2);
 		}
 

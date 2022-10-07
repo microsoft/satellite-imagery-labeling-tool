@@ -73,7 +73,7 @@ body {
     margin-top: 25px;
 }  
 
-#osmLoadingScreen {
+#osmLoadingScreen, #customImportLoadingScreen {
     position: absolute;
     top: 0;
     left: 0;
@@ -82,7 +82,7 @@ body {
     z-index: 100000;
 }
 
-#osmLoadingScreen:before {
+#osmLoadingScreen:before, #customImportLoadingScreen:before {
     content: ' ';
     display: block;
     position: absolute;
@@ -97,7 +97,7 @@ body {
     background-size: cover;
   }
 
-#osmLoadingScreen button  {
+#osmLoadingScreen button, #customImportLoadingScreen button {
     position: absolute;
     top: 50px;
     left: calc(50% - 150px);

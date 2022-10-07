@@ -35,7 +35,9 @@ export let appSettings = {
 					"instructions": "Welcome to the Spatial imagery labeling tool.\n\nTo get started, either load a project task file, or simply zoom into an area of interest and start drawing!",
 					"instructions_on_load": true,
 					"drawing_type": "polygons",
-					"allow_wizard": true,
+					"allow_wizard": true,					
+					"customDataService": null,
+					"customDataServiceLabel": null,
 					"layers": {
 						"ESRI World Imagery": {
 							type: "TileLayer",

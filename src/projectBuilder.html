@@ -51,6 +51,10 @@
 
                 <label title="Do you want users to be able to import existing data from Open Street Maps?"><input type="checkbox" checked="checkbox" data-binding="allow_wizard"/> Allow OSM overpass wizard</label>
 
+                <label><input id="customDataSwitch" type="checkbox"/> Allow data import from custom service</label>
+                <label id="customDataServiceButtonLabel" style="display:none;">Button name: <input type="text" data-binding="customDataServiceLabel" value="Add custom data"/></label>
+                <label id="customDataServiceLabel" style="display:none;">Data service: <input type="text" data-binding="customDataService"/></label>
+
                 <label for="drawingType" class="topLabel">Allowed drawing type(s)</label>
                 <select id="drawingType" data-binding="drawing_type">
                     <option value="all" title="Allow drawing lines, polygons, rectangles, and circles.">All</option>      

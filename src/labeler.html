@@ -42,6 +42,8 @@
 					<button id="loadLocalData" class="icon-btn-round" type="button"><i class="material-symbols-outlined">database</i><span>Local data file</span></button>
 
 					<button id="loadOsmWizard" class="icon-btn-round" type="button"><i class="material-symbols-outlined">auto_activity_zone</i><span>OSM Overpass Wizard</span></button>
+
+					<button id="customImportBtn" class="icon-btn-round" type="button" style="display:none"><i class="material-symbols-outlined">place_item</i><span>Import custom data</span></button>
 				</div>
 
 				<div id="importWizard" style="display:none">
@@ -196,6 +198,10 @@
 
 	<div id="osmLoadingScreen" style="display:none">
 		<button class="text-btn-round" type="button">Cancel OSM Overpass Wizard import</button> 	
+	</div>
+
+	<div id="customImportLoadingScreen" style="display:none">
+		<button class="text-btn-round" type="button">Cancel data import</button> 	
 	</div>
 
 	<!-- Add Azure Maps libraries -->

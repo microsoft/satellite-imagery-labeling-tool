@@ -73,9 +73,9 @@ export let appSettings = {
 
 	/** Display name: file name in overpassScripts folder. */
 	overpassScripts: {
-		'Buildings': 'buildings.txt',
-		'Sidewalks':  'sidewalks.txt',
-		'Railways': 'railways.txt'
+		'Buildings': 'buildings.overpassql',
+		'Sidewalks':  'sidewalks.overpassql',
+		'Railways': 'railways.overpassql'
 	},
 
 	/** List of overpass turbo API endpoints. */

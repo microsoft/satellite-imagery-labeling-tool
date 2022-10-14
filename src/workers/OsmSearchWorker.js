@@ -85,24 +85,20 @@ function filterNewData(osm_data, opt) {
             (f.geometry.type.indexOf('Polygon') > -1 && opt.allowPolygons)) {
 
             //Check to see if data intersects with the area of interest (if provided).
-            if (opt.aoi && opt.aoi.type) {
-                if(turf.booleanIntersects(opt.aoi, f.geometry)) {
+            if ((opt.aoi && opt.aoi.type && turf.booleanIntersects(opt.aoi, f.geometry)) || !opt.aoi || !opt.aoi.type) {
 
-                    //Loop through all existing shapes and check to see if the new data intersects. Only import data that doesn't intersect with existing data.
-                    for (let i = 0; i < opt.existingGeoms.length; i++) {
-                        if (turf.booleanIntersects(opt.existingGeoms[i].geometry, f.geometry)) {
-                            overlaps = true;
-                            break;
-                        }
-                    }
-                    
-                    //Import non-overlapping feature.
-                    if (!overlaps) {
-                        filteredData.push(f);
+                //Loop through all existing shapes and check to see if the new data intersects. Only import data that doesn't intersect with existing data.
+                for (let i = 0; i < opt.existingGeoms.length; i++) {
+                    if (turf.booleanIntersects(opt.existingGeoms[i].geometry, f.geometry)) {
+                        overlaps = true;
+                        break;
                     }
                 }
-            } else {
-                filteredData.push(f);
+
+                //Import non-overlapping feature.
+                if (!overlaps) {
+                    filteredData.push(f);
+                }
             }
         }
     });

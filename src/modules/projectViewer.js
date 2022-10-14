@@ -375,8 +375,7 @@ export class ProjectViewerApp {
             self.#resultSource.setShapes(project.results);
 
             //Create legends.
-            
-            const pc = project.aoi.properties.primary_classes;
+            const pc = props.primary_classes;
             let html = ['<h2>', pc.display_name,'</h2><div class="legend">'];
 
             pc.names.forEach(n => {
@@ -387,7 +386,7 @@ export class ProjectViewerApp {
 
             self.#legends.primary = html.join('');
 
-            const sc = project.aoi.properties.secondary_classes;
+            const sc = props.secondary_classes;
             if(sc && sc.names && sc.names.length > 0){
                 let html = ['<h2>', sc.display_name,'</h2><div class="legend">'];
 

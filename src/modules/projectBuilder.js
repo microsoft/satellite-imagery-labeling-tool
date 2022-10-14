@@ -29,6 +29,8 @@ export class ProjectBuilderApp {
             instructions_on_load: true,
             drawing_type: "polygon",
             allow_wizard: true,
+            customDataService: null,
+            customDataServiceLabel: null,
             layers: {},
             primary_classes: {
                 display_name: 'Primary class',
@@ -234,7 +236,11 @@ export class ProjectBuilderApp {
      * Initialize step 1.
      */
     #initStep1() {
-        const self = this;
+        const self = this;       
+
+        const binding = self.#binding;
+        const props = self.#config.properties;
+
         const cardElm = document.getElementById('step-1');
         const binders = cardElm.querySelectorAll('[data-binding]');
 
@@ -244,8 +250,22 @@ export class ProjectBuilderApp {
             preview.innerHTML = marked.parse(instructions.value);
         });
 
-        const binding = self.#binding;
-        const props = self.#config.properties;
+        
+        const customDataSwitch = document.getElementById('customDataSwitch');
+        const customDataServiceButtonLabel = document.getElementById('customDataServiceButtonLabel');
+        const customDataServiceLabel = document.getElementById('customDataServiceLabel');
+        
+        customDataSwitch.addEventListener('click', () => {
+            if(customDataSwitch.checked){
+                customDataServiceLabel.style.display = '';
+                customDataServiceButtonLabel.style.display = '';
+            } else {
+                customDataServiceLabel.style.display = 'none';                
+                customDataServiceButtonLabel.style.display = 'none';
+                props.customDataServiceLabel = null;
+                props.customDataService = null;
+            }
+        });
 
         binders.forEach(e => {
             binding.bind(e, e.getAttribute('data-binding'), null, (names, val) => {
@@ -974,7 +994,7 @@ export class ProjectBuilderApp {
 
     #loadProject(fileBlob) {
         const self = this;
-        const settingsFileName = 'project_builder_settings.json';
+        //const settingsFileName = 'project_builder_settings.json';
 
         ProjectUtils.readProjectFile(fileBlob).then(project => {
             //Load the area of interest into the drawing manager.
@@ -1005,6 +1025,10 @@ export class ProjectBuilderApp {
                     }
                 }
             });
+
+            const customDataSwitch = document.getElementById('customDataSwitch');
+            customDataSwitch.checked = (props.customDataService && props.customDataService !== '');
+            customDataSwitch.onclick();
 
             //Trigger instructions preview to update.
             elms.instructions.dispatchEvent(new Event('keyup'));

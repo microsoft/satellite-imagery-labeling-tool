@@ -110,7 +110,6 @@ export class LabelerApp {
 			name: appSettings.autoSave.name
 		});
 
-
 		self.#initSettingsPanel();
 
 		const hasAZMapAuth = Utils.isAzureMapsAuthValid(mapSettings.azureMapsAuth);
@@ -1248,6 +1247,13 @@ export class LabelerApp {
 				self.#addLayers(cp.layers);
 				self.#updateLayerStates();
 
+				//If a non-Azure Maps layer is in the config, set initial layer to the first one.
+				if (cp.layers) {
+					const layerNames = Object.keys(cp.layers);
+					if (layerNames.length > 0)
+						self.#layerControl.setVisibleLayer(layerNames[0]);
+				}
+
 				self.#classControl.setClasses(cp.primary_classes, cp.secondary_classes);
 			});
 
@@ -1524,11 +1530,7 @@ export class LabelerApp {
 			return;
 		}
 
-		//Add the data to the data source, and save the session.
-		//this.#featureSource.add(e.data);
-		//this.#saveSession();
-
-		//IMport the features. No need to filter as that was done in the worker. 
+		//Import the features. No need to filter as that was done in the worker. 
 		this.#importFeatures(e.data, {
 			source: 'OSMOverpass'
 		}, false, true);

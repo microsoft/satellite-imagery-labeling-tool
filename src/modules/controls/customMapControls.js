@@ -219,6 +219,22 @@ export class SimpleLayerControl {
 	}
 
 	/**
+	 * Sets the current visible layer to display on the map.
+	 * @param {*} layerId he layer id of the desired layer to make visible.
+	 */
+	setVisibleLayer(layerId) {
+		const labels = this.#container.querySelectorAll('label');
+
+		for(let i=0;i<labels.length;i++) {
+			let id = labels[i].getAttribute('rel');
+			if(id === layerId) {
+				labels[i].click();
+				break;
+			}
+		}
+	}
+
+	/**
 	 * Sets the enabled state of a layer.
 	 * @param {*} layerId The ID of the layer to update the enabled state on.
 	 * @param {*} enabled The enabled state to set.

@@ -20,7 +20,7 @@ This is a lightweight web-interface for creating and sharing vector labels (line
 - [Labeler](https://microsoft.github.io/satellite-imagery-labeling-tool/src/labeler.html) - Loads a task file for an labeling project (annotation). For more details, see the [Labeler documentation](docs/Labeler.md).
   - Automatically caches data in local browser storage (does not leave your machine) to help prevent data lose from accidental browser refresh or closer. Makes it easy to come back later and continue where you left off. Supports multiple labeling projects by seperating the data by the projects task name. [Learn more](docs/Labeler.md#auto-save-feature).
   - Import existing data from local geospatial files. Supports: GeoJSON, GeoJSONL, KML, KMZ, GeoRSS, GPX, GML, CSV (comma, tab, or pipe delimited). 
-  - Easily import existing data from Open Street Maps via the [Overpass turbo API](https://overpass-turbo.eu). Avoids loading in any data for areas that already have drawn features.
+  - Easily import existing data from Open Street Maps via the [Overpass turbo API](https://overpass-turbo.eu) or a custom data service. Avoids loading in any data for areas that already have drawn features.
 - [Project viewer](https://microsoft.github.io/satellite-imagery-labeling-tool/src/projectViewer.html) - View and merge the results from the project. See stats and easily identify which areas have little to no labels. For more details, see the [Project viewer documentation](docs/Project-viewer.md).
 
 Also see the [Documentation](docs/README.md) and the [Spatial imagery ML Jupyter notebook example](example/training-example.ipynb).
@@ -33,6 +33,8 @@ Also see the [Documentation](docs/README.md) and the [Spatial imagery ML Jupyter
 
 ## Additional Features
 
+- Multi-delete (lasso delete).
+- Shift imported data to align with your imagery.
 - Support for color themes to align with user preferences.
 - Local settings saved so users only have to set their preference once and have those presist across multiple sessions.
 
@@ -46,9 +48,6 @@ Unlock [enhanced functionality with Azure Maps](docs/Layers.md#enhanced-function
 
 The following are some ideas to take this project further:
 
-- Advanced feature tab
-  - Mutli-select delete/lasso delete. 
-  - Multi-select and shift data. May be required for imported data to align with shifted imagery.
 - Consider integrating Azure Planetary Computer services. Import imagery layers and/or vector data.
 - Add an orthogonalize polygon/squaring option in the labeler to help make drawn features look nicer.
 - Magic wand drawing tool that uses a flood fill algorithm on the imagery to generate polygons based on the likeness of nearby pixels.

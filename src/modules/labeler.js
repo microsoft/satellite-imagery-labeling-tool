@@ -36,6 +36,7 @@ export class LabelerApp {
 	#outlineLayer;
 	#aoiSource = new atlas.source.DataSource();
 	#bulkEditMode;
+	#shiftIntervalToken;
 
 	#navItems = [
 		{
@@ -61,6 +62,12 @@ export class LabelerApp {
 			name: 'Screenshot',
 			icon: 'photo_camera',
 			flyoutCard: 'screenshotCard'
+		},
+		{
+			type: 'menuItem',
+			name: 'Power tools',
+			icon: 'bolt',
+			flyoutCard: 'powerToolsCard'
 		},
 		{
 			type: 'menuItem',
@@ -188,6 +195,7 @@ export class LabelerApp {
 		self.#initLayerPanel();
 		self.#initSavePanel();
 		self.#initScreenshotPanel();
+		self.#initPowerTools();
 
 		self.#updateOsmLinks();
 	}
@@ -720,6 +728,59 @@ export class LabelerApp {
 		};
 	}
 
+	/** Initialize power tools. */
+	#initPowerTools() {
+		const self = this;
+		const shiftButtons = document.querySelectorAll('#shiftDataButtons button');
+		const dataShiftFilter = document.getElementById('dataShiftFilter');
+
+		shiftButtons.forEach(sb => {
+			sb.onmousedown = () => {
+
+				const shiftData = () => {
+					const self = this;
+					let filter = dataShiftFilter.options[dataShiftFilter.selectedIndex].value;
+
+					if (filter === '') {
+						filter = null;
+					}
+
+					const heading = parseFloat(sb.getAttribute('rel'));
+
+					//Calculate the meters per pixels
+					const cam = self.map.getCamera();
+					const offset = Utils.groundResolution(cam.center[1], cam.zoom);
+
+					const fc = self.#getSourceData(false, true, true);
+					Utils.shiftFeatureCollection(fc, offset, heading, filter);
+
+					self.#featureSource.setShapes(fc);
+					self.#saveSession();
+				};
+				
+				shiftData();
+
+				self.#shiftIntervalToken = setInterval(shiftData, 100);
+			};
+
+			sb.onmouseup = () => {
+				clearInterval(self.#shiftIntervalToken);
+			};
+		});
+
+		document.getElementById('rectangleDeleteBtn').onclick = () => {
+			self.#classControl.trigger('bulkedit', {
+				mode: 'delete-rectangle'
+			});
+		};
+
+		document.getElementById('polygonDeleteBtn').onclick = () => {
+			self.#classControl.trigger('bulkedit', {
+				mode: 'delete-polygon'
+			});
+		};
+	}
+	
 	///////////////////////////
 	// Map functions
 	//////////////////////////
@@ -864,6 +925,8 @@ export class LabelerApp {
 			});
 		}
 
+		document.getElementById('dataShiftFilter').options[1].style.display = (self.#hasAZMapAuth) ? '' : 'none';
+
 		//Create a layer control and add it to the map. 
 		let layerControl = new SimpleLayerControl(self.#baselayers, true);
 		map.controls.add(layerControl, {
@@ -890,11 +953,19 @@ export class LabelerApp {
 			});
 
 			//Loop through all shapes and update the properties if their id was captured in the intersection test.
-			self.#featureSource.getShapes().forEach(s => {
-				if (ids.indexOf(s.getId()) > -1) {
-					s.setProperties(Object.assign(s.getProperties(), self.#bulkEditMode.value));
-				}
-			});
+			if (self.#bulkEditMode.mode.startsWith('delete')) {
+				ids.forEach(id => {
+					self.#featureSource.removeById(id);
+				});
+
+				self.#classControl.completeBulkEdit();
+			} else {
+				self.#featureSource.getShapes().forEach(s => {
+					if (ids.indexOf(s.getId()) > -1) {
+						s.setProperties(Object.assign(s.getProperties(), self.#bulkEditMode.value));
+					}
+				});
+			}
 
 			//Save the session.
 			self.#saveSession();
@@ -919,8 +990,18 @@ export class LabelerApp {
 			//Idle the drawing manager.
 			dm.setOptions({ mode: 'idle' });
 
+			let mode = 'idle';
+
+			if (opt && opt.mode) {
+				if (opt.mode.indexOf('rectangle') > -1) {
+					mode = 'draw-rectangle';
+				} else if (opt.mode.indexOf('polygon') > -1) {
+					mode = 'draw-polygon';
+				}
+			}
+
 			dm2.setOptions({
-				mode: (opt && opt.mode === 'rectangle') ? 'draw-rectangle' : 'idle'
+				mode: mode
 			});
 
 			//Set the bulk edit mode. 
@@ -981,7 +1062,7 @@ export class LabelerApp {
 					shape.setProperties(Object.assign(shape.getProperties(), self.#bulkEditMode.value));
 					self.#saveSession();
 				} else {
-					//If no draeing is going on, show the popup for the clicked shape.
+					//If no drawing is going on, show the popup for the clicked shape.
 					self.#showEditPopup(e);
 				}
 			}
@@ -1217,6 +1298,9 @@ export class LabelerApp {
 		const cp = config.properties;
 		const dc = appSettings.defaultConfig;
 
+		const dataShiftFilter = document.getElementById('dataShiftFilter');
+		dataShiftFilter.selectedIndex = 0;
+
 		//Add the area of interest and focus the map view on it.
 		if (config.geometry && (config.geometry.type === 'Polygon' || config.geometry.type === 'MultiPolygon')) {
 			self.#aoiSource.setShapes(config);
@@ -1264,18 +1348,23 @@ export class LabelerApp {
 				self.navbar.setSelectedItem('Instructions');
 			}
 
-			document.getElementById('loadOsmWizard').style.display = (cp.allow_wizard && cp.drawing_type !== 'rectangle') ? '' : 'none';
+			const wizardDisplay = (cp.allow_wizard && cp.drawing_type !== 'rectangle') ? '' : 'none';
+			document.getElementById('loadOsmWizard').style.display = wizardDisplay;
+			dataShiftFilter.options[2].style.display = wizardDisplay;
 
 			if (dm) {
 				self.#updateShapeColors();
 			}
 
-			//Set visibility of custom data service            
+			//Set visibility of custom data service     			       
 			if (cp.customDataService && cp.customDataService !== '' && cp.customDataServiceLabel && cp.customDataServiceLabel !== '') {
 				document.getElementById('customImportBtn').style.display = '';
 				document.querySelector('#customImportBtn span').innerText = cp.customDataServiceLabel;
+				dataShiftFilter.options[3].style.display = '';
+				dataShiftFilter.options[3].innerText = cp.customDataServiceLabel.replace(/^Add /gi, '');
 			} else {
 				document.getElementById('customImportBtn').style.display = 'none';
+				dataShiftFilter.options[3].style.display = 'none';
 			}
 		}
 

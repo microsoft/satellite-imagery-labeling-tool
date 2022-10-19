@@ -135,3 +135,11 @@ body {
 .popup-class button, .popup-class input[type="button"] {
     margin: 5px 5px 0 5px;
 }
+
+#shiftDataButtons {
+    transform: scale(0.8);
+}
+
+#powerToolsCard {
+    display: grid;
+}

@@ -86,3 +86,19 @@ The `task_name` property contains the name of the task and makes it easier to li
 If the filter option for class and source properties is not checked, all properties in the features will be exported, including any properties that existed on imported features.
 
 **NOTE:** The administrator may overrise the `class` and `secondary_class` property names in the project builder tool. This will cause the output of the labeling tool to use the administrator specified property names.
+
+## Power tools
+
+The power tools section includes a set of advanced tools that more regular users of these tools may find useful. 
+
+### Multi delete buttons
+
+Easily delete multiple shapes on the map. 
+
+- Rectangle delete - Click this button, then draw a rectangle to delete all intersecting shapes.
+- Polygon delete - Click this button, then draw a polygon to delete all intersecting shapes.
+
+### Shift data tool
+
+This tool lets you move the shapes a subset of the shapes on the map easily. Simply select what data from the dropdown you want to shift and then click the arrow buttons to shift the shapes one pixel in the direction of the buttons arrow. Press and hold down the button to continuously shift the data until you release the button. This tool is useful when importing data that doesn't align with your projects primary imagery source.
+

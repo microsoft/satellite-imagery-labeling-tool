@@ -467,6 +467,80 @@ export class Utils {
         polygon.coordinates = g.coordinates;
     }
 
+    /**
+     * Shifts the coordinates of all features in a feature collection.
+     * @param {*} fc A collection of features.
+     * @param {*} offset Offset in meters.
+     * @param {*} heading The direction to shift the features.
+     * @param {*} sourceFilter The name of the source property on features to limit the shifting too.
+     */
+    static shiftFeatureCollection(fc, offset, heading, sourceFilter) {
+        if (fc && fc.features) {
+            fc.features.forEach(f => {
+                if(!sourceFilter || f.properties.source === sourceFilter) {
+                    Utils.shiftGeometry(f.geometry, offset, heading);
+                }
+            });
+        }
+    }
+
+    /**
+     * Shifts the coordinates of a geometry.
+     * @param {*} geom The geometry to shift.
+     * @param {*} offset Offset in meters.
+     * @param {*} heading The direction to shift the geometry.
+     */
+    static shiftGeometry(geom, offset, heading) {
+        switch (geom.type) {
+            case 'Point':
+                Utils.shiftCoordinate(geom.coordinates, offset, heading);
+                break;
+            case 'LineString':
+            case 'MultiPoint':
+                Utils.shiftCoordinates(geom.coordinates, offset, heading);
+                break;
+            case 'Polygon':
+            case 'MultiLineString':
+                geom.coordinates.forEach(r => {
+                    Utils.shiftCoordinates(r, offset, heading);
+                });
+                break;
+            case 'MultiPolygon':
+                geom.coordinates.forEach(p => {
+                    p.forEach(r => {
+                        Utils.shiftCoordinates(r, offset, heading);
+                    });
+                });
+                break;
+        }
+    }
+
+    /**
+     * Shifts an array of coordinates.
+     * @param {*} coords Array of coordinates to shift.
+     * @param {*} offset Offset in meters.
+     * @param {*} heading The direction to shift the coordinates.
+     */
+    static shiftCoordinates(coords, offset, heading) {
+        for(let i=0,len = coords.length;i<len;i++) {
+            const c = atlas.math.getDestination(coords[i], heading, offset);
+            coords[i][0] = c[0];
+            coords[i][1] = c[1];
+        }
+    }
+
+    /**
+     * Shifts a coordinate.
+     * @param {*} coord The coordinate to shift.
+     * @param {*} offset Offset in meters.
+     * @param {*} heading The direction to shift the coordinate.
+     */
+    static shiftCoordinate(coord, offset, heading) {
+        const c = atlas.math.getDestination(coord, heading, offset);
+        coord[0] = c[0];
+        coord[1] = c[1];
+    }
+
     /////////////////////////////////////
     // HTML utilities
     ////////////////////////////////////

@@ -189,6 +189,38 @@
 				</div>
 
 				<div id="stats" style="display:none"></div>
+
+				<div id="powerToolsCard" style="display:none">
+					<button id="rectangleDeleteBtn" class="icon-btn-round" type="button" alt="Click to bulk delete by drawing a rectangle" title="Click to bulk delete by drawing a rectangle"><i class="material-symbols-outlined">delete</i><span>Rectangle erase</span></button>
+					<button id="polygonDeleteBtn" class="icon-btn-round" type="button" alt="Click to bulk delete by drawing a polygon" title="Click to bulk delete by drawing a polygon"><i class="material-symbols-outlined">delete</i><span>Polygon erase</span></button>
+					<br/><br/>
+
+					<label for="dataShiftFilter">Shift data</label>
+					<br/>
+					<select id="dataShiftFilter">
+						<option value="" selected="selected">All data</option>
+						<option value="Drawn|Azure Maps Satellite">Azure Maps drawn data</option>
+						<option value="OSMOverpass">OSM Wizard imported data</option>
+						<option value="CustomDataImport">Custom service imported data</option>
+					</select>
+					<table id="shiftDataButtons">
+						<tr>
+							<td></td>
+							<td><button class="icon-btn-round" rel="0" type="button" title="Shift features north"><i class="material-symbols-outlined">north</i></button></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td><button class="icon-btn-round" rel="270" type="button" title="Shift features west"><i class="material-symbols-outlined">west</i></button></td>
+							<td></td>
+							<td><button class="icon-btn-round" rel="90" type="button" title="Shift features east"><i class="material-symbols-outlined">east</i></button></td>
+						</tr>
+						<tr>
+							<td></td>
+							<td><button class="icon-btn-round" rel="180" type="button" title="Shift features south"><i class="material-symbols-outlined">south</i></button></td>
+							<td></td>
+						</tr>
+					</table>
+				</div>
 			</div>
       	</div>
 	  	<div class="main-content">

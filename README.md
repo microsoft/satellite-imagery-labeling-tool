@@ -46,6 +46,9 @@ Unlock [enhanced functionality with Azure Maps](docs/Layers.md#enhanced-function
 
 The following are some ideas to take this project further:
 
+- Advanced feature tab
+  - Mutli-select delete/lasso delete. 
+  - Multi-select and shift data. May be required for imported data to align with shifted imagery.
 - Consider integrating Azure Planetary Computer services. Import imagery layers and/or vector data.
 - Add an orthogonalize polygon/squaring option in the labeler to help make drawn features look nicer.
 - Magic wand drawing tool that uses a flood fill algorithm on the imagery to generate polygons based on the likeness of nearby pixels.

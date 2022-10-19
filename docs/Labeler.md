@@ -79,6 +79,7 @@ When saved as a GeoJSON file, the output will be a feature collection with each 
 - `"OSMOverpass"` - The geometry was imported from Open Street Maps using the Overpass turbo API.
 - `Drawn|{imagery layer name}` - The geometry was drawn or editted by the user, and was displaying the specified imagery layer.
 - `LocalFile|{filename}` - The geometry was imported from a local file by the user. Includes the name of the local file. 
+- `CustomDataImport` - The geometry was imported using the custom data service set in the project configuration. This only occurs when the project admin has added a custom data service import option to the project.
 
 The `task_name` property contains the name of the task and makes it easier to link back where the feature came from. 
 

@@ -1773,7 +1773,7 @@ export class LabelerApp {
 			//Calcuate the expiry date for old cached data.
 			const expiryDate = new Date().setDate(today.getDate() - appSettings.autoSave.ttl);
 
-			await self.#storage.iterate(async (value, key) => {
+			await self.#storage.iterate((value, key) => {
 				//Check to see if there is cached data for the named project.
 				if (key === self.config.properties.name) {
 					//Check to see if the user wants to recover it. 
@@ -1782,14 +1782,18 @@ export class LabelerApp {
 						self.#calcStats();
 					} else {
 						//If not, clear the cached data.
-						await self.#storage.removeItem(key);
+						removeExpireData(key);
 					}
 				} else if (value.date < expiryDate) {
 					//Check other cached data to see if it's older than the expiry date. If so, remove it.
-					await self.#storage.removeItem(key);
+					removeExpireData(key);
 				}
 			});
 		}
+	}
+
+	async removeExpireData(key) {
+		await self.#storage.removeItem(key);
 	}
 
 	/** Captures the user prefernce settings, and saves them for future sessions. */

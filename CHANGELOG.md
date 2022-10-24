@@ -1,5 +1,10 @@
 # Changelog
 
+## 10/24/2022
+
+- Bug fix: "Uncaught ReferenceError: removeExpireData is not defined".
+- Bug fix: Issue related to deleting a shape after it has been editted.
+
 ## 10/19/2022
 
 - Added power tools: multi-delete, and data shifting feature.

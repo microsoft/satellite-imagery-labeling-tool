@@ -1040,13 +1040,17 @@ export class LabelerApp {
 			const mode = dm.getOptions().mode;
 
 			if (mode === 'edit-geometry') {
-				//Idle drawing manager.
-				self.#idleDrawing();
+				if(!dm.getSource().getShapeById(shape.getId())){
+					//Idle drawing manager.
+					self.#idleDrawing();
 
-				//Remove the shape from the main source and add to drawing manager source, then enable editting on it.
-				self.#featureSource.remove(shape);
+					//Remove the shape from the main source and add to drawing manager source, then enable editting on it.
+					//self.#featureSource.removeById(shape.getId());
+					const id = shape.getId();
+					self.#forceRemoveShape(id);
 
-				dm.edit(shape);
+					dm.edit(shape);
+				}
 			} else if (mode === 'erase-geometry') {
 				//If continuous delete disabled, idle the drawing manager.
 				if (!document.getElementById('continuousDelete').checked) {
@@ -1054,7 +1058,8 @@ export class LabelerApp {
 				}
 
 				//If in erase mode, delete the clicked feature from the source and idle drawing manager.
-				self.#featureSource.remove(shape);
+				const id = shape.getId();
+				self.#forceRemoveShape(id);
 
 				self.#saveSession();
 			} else if (mode === 'idle') {
@@ -1083,6 +1088,41 @@ export class LabelerApp {
 			});
 			self.#popup.open(self.map);
 		}
+	}
+
+	/**
+	 * Removes one or more shapes that have a specific ID but only triggers one refresh.
+	 * @param {*} id The shape id.
+	 */
+	#forceRemoveShape(id) {
+		const self = this;
+		const shapes = self.#featureSource.toJson();
+		for(let i=shapes.features.length - 1;i >= 0;i--){
+			if(shapes.features[i].id === id){
+				shapes.features.splice(i, 1);
+			}
+		}
+
+		self.#featureSource.setShapes(shapes);
+	}
+
+	/**
+	 * Replaces a shape in a data source and only triggers a single refresh.
+	 * @param {*} shape The shape to replace.
+	 */
+	#replaceShape(shape) {
+		const self = this;
+		const id = shape.getId();
+		const shapes = self.#featureSource.toJson();
+		for(let i=shapes.features.length - 1;i >= 0;i--){
+			if(shapes.features[i].id === id){
+				shapes.features.splice(i, 1);
+			}
+		}
+
+		shapes.features.push(shape.toJson());
+
+		self.#featureSource.setShapes(shapes);
 	}
 
 	#createPopupContent(popup) {
@@ -1499,7 +1539,8 @@ export class LabelerApp {
 
 		//Move the shape to the feature source.
 		dm.getSource().remove(shape);
-		self.#featureSource.add(shape);
+		//self.#featureSource.add(shape);
+		self.#replaceShape(shape);
 
 		self.#saveSession();
 	}
@@ -1782,18 +1823,18 @@ export class LabelerApp {
 						self.#calcStats();
 					} else {
 						//If not, clear the cached data.
-						removeExpireData(key);
+						self.#removeExpireData(key).then();
 					}
 				} else if (value.date < expiryDate) {
-					//Check other cached data to see if it's older than the expiry date. If so, remove it.
-					removeExpireData(key);
+					//Check other cached data to see if it's older than the expiry date. If so, remove it.					
+					self.#removeExpireData(key).then();
 				}
 			});
 		}
 	}
 
-	async removeExpireData(key) {
-		await self.#storage.removeItem(key);
+	async #removeExpireData(key) {
+		await this.#storage.removeItem(key);
 	}
 
 	/** Captures the user prefernce settings, and saves them for future sessions. */

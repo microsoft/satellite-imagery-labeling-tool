@@ -4,7 +4,7 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="shortcut icon" href="./assets/earth.ico"/>
-    
+
 	<title>Spatial imagery labeling project builder</title>
 
 	<!-- Add Azure Maps CSS files. -->
@@ -24,18 +24,18 @@
 	<header>
 		<h1 id="appTitle">Spatial imagery labeling project builder</h1>
 
-        <button id="helpBtn" title="Help" class="text-btn-round" type="button"><i class="material-symbols-outlined">question_mark</i></button>      
+        <button id="helpBtn" title="Help" class="text-btn-round" type="button"><i class="material-symbols-outlined">question_mark</i></button>
 
         <a class="text-btn-round" href="projectViewer.html" target="_blank">Open project viewer</a>
 	</header>
 
 	<div class="main w3-row">
 	  	<div class="card-panel">
-            <div id="step-1" class="stepCard">                
+            <div id="step-1" class="stepCard">
 
                 <input type="file" id="loadLocalProjectFile" accept=".zip"/>
                 <button id="loadProjectBtn" class="text-btn-round" type="button">Load existing project</button>
-                
+
                 <h2>Step 1: Project details</h2>
 
                 <label for="projectName" class="topLabel" title="A unique name for the annotaiton project.">Project Name (required)</label>
@@ -57,7 +57,7 @@
 
                 <label for="drawingType" class="topLabel">Allowed drawing type(s)</label>
                 <select id="drawingType" data-binding="drawing_type">
-                    <option value="all" title="Allow drawing lines, polygons, rectangles, and circles.">All</option>      
+                    <option value="all" title="Allow drawing lines, polygons, rectangles, and circles.">All</option>
                     <option value="lines" title="Allow drawing lines.">Lines</option>
                     <option value="polygons" title="Allow drawing polygons, rectangles, and circles." selected>Polygons</option>
                     <option value="rectangles" title="Allow drawing rectangles only.">Rectangles only</option>
@@ -77,7 +77,7 @@
                 <div id="layerCardLayerList"></div>
 
                 <button class="text-btn-round" type="button">+Add new layer(s)</button>
-                
+
                 <div class="stepBtnContainer">
                     <button class="text-btn-round backBtn" type="button">Back</button>
                     <button class="text-btn-round nextBtn" type="button" disabled>Next</button>
@@ -91,14 +91,14 @@
 
                 Draw the project area to focus on.
 
-                <div id="drawingToolbarContainer"></div>                
+                <div id="drawingToolbarContainer"></div>
 
                 <h3>Gridding options</h3>
 
-                <label for="importAreaFile" class="topLabel">Or import area from local file.</label>              
+                <label for="importAreaFile" class="topLabel">Or import area from local file.</label>
                 <input type="file" id="importAreaFile" accept=".geojson,.geojsonl,.xml,.kml,.kmz,.zip,.gml,.gpx,.georss,.csv,.txt,.tab,.pipe,.json,.js"/>
                 <button id="importAreaBtn" class="text-btn-round" type="button">Import area</button>
-                
+
                 <label for="gridUnits" class="topLabel">Grid size units</label>
                 <select id="gridUnits">
                     <option>feet</option>
@@ -182,10 +182,10 @@
 	<script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.js"></script>
     <script src="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.js"></script>
     <script src="https://atlas.microsoft.com/sdk/javascript/spatial/0/atlas-spatial.js"></script>
-	
-	<!-- Add 3rd party libraries libraries -->
+
+	<!-- Add 3rd party libraries -->
 	<script src="libs/azure-maps-image-exporter.min.js"></script>
-	<script src='libs/turf.min.js'></script>    
+	<script src='libs/turf.min.js'></script>
 	<script src="libs/marked.min.js"></script>
     <script src="libs/jszip.min.js"></script>
 

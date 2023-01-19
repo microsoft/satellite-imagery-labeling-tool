@@ -158,7 +158,7 @@ export class ProjectUtils {
                 //Create a match expression based on the primary classes property name.
                 const colorExp = ['match', ['get', secondary.property_name]];
 
-                //Create a color pallete for secondary values. 
+                //Create a color pallete for secondary values.
                 secondary.names.forEach((n, i) => {
                     if (i < appSettings.colorPalette.length) {
                         colorExp.push(n, appSettings.colorPalette[i]);

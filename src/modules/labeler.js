@@ -137,7 +137,7 @@ export class LabelerApp {
 		self.flyout = new Flyout(document.querySelector('.flyout'), self.#navItems);
 
 		self.navbar.on('item-selected', (item) => {
-			//If the same item is selected, toggle it close. 
+			//If the same item is selected, toggle it close.
 			if (self.flyout.isCurrentItem(item)) {
 				self.flyout.hide();
 			} else {
@@ -239,7 +239,7 @@ export class LabelerApp {
 			}
 		};
 
-		//Click event for a button to load local config file. 
+		//Click event for a button to load local config file.
 		document.getElementById('loadLocalTask').onclick = () => {
 			self.#popup.close();
 			//self.flyout.hide();
@@ -252,7 +252,7 @@ export class LabelerApp {
 			if (e.target.files && e.target.files.length > 0) {
 				const file = e.target.files[0];
 
-				//Create initial properties to assign to the imported shapes. 
+				//Create initial properties to assign to the imported shapes.
 				const source = { source: `LocalFile|${file.name}` };
 
 				if (file.name.toLowerCase().indexOf('.geojsonl') > -1) {
@@ -299,14 +299,14 @@ export class LabelerApp {
 			}
 		};
 
-		//Click event for a button to load local data file. 
+		//Click event for a button to load local data file.
 		document.getElementById('loadLocalData').onclick = () => {
 			self.#popup.close();
 			loadLocalDataFile.click();
 			self.flyout.hide();
 		};
 
-		//Click event for loading data using the OSM wizard. 
+		//Click event for loading data using the OSM wizard.
 		document.getElementById('loadOsmWizard').onclick = () => {
 			self.#popup.close();
 			self.flyout.show('importWizard');
@@ -339,7 +339,7 @@ export class LabelerApp {
 				//Complete the bulk edit phase.
 				self.#classControl.completeBulkEdit();
 
-				//get query values -> show loading screen -> run query in worker -> if success, load data and close flyout. if error, prompt user, leave flyout open.	
+				//get query values -> show loading screen -> run query in worker -> if success, load data and close flyout. if error, prompt user, leave flyout open.
 
 				let cdWorker = self.#cdWorker;
 				if (!cdWorker) {
@@ -393,7 +393,7 @@ export class LabelerApp {
 			return;
 		}
 
-		//Import the features. No need to filter as that was done in the worker. 
+		//Import the features. No need to filter as that was done in the worker.
 		this.#importFeatures(e.data, {
 			source: 'CustomDataImport'
 		}, false, true);
@@ -768,7 +768,7 @@ export class LabelerApp {
 					self.#featureSource.setShapes(fc);
 					self.#saveSession();
 				};
-				
+
 				shiftData();
 
 				self.#shiftIntervalToken = setInterval(shiftData, 100);
@@ -791,7 +791,7 @@ export class LabelerApp {
 			});
 		};
 	}
-	
+
 	///////////////////////////
 	// Map functions
 	//////////////////////////
@@ -892,7 +892,7 @@ export class LabelerApp {
 		previewLayers.lineLayer.setOptions(dwgLineOptions);
 		previewLayers.polygonOutlineLayer.setOptions(dwgLineOptions);
 
-		//Add the feature source. Shapes will be moved to this data source for visualization. 
+		//Add the feature source. Shapes will be moved to this data source for visualization.
 		//For performance, the drawing manager source will only be used when a shape is being editted or drawn.
 		const featureSource = self.#featureSource;
 		map.sources.add(featureSource);
@@ -936,7 +936,7 @@ export class LabelerApp {
 				map.getCanvas().style.cursor = 'grab';
 
 				for (let i = 0; i < e.shapes.length; i++) {
-					//If drawing manager is idle, check to see if shape from drawing manager hovered.	
+					//If drawing manager is idle, check to see if shape from drawing manager hovered.
 					if (e.shapes[i] instanceof atlas.Shape && featureSource.getShapeById(e.shapes[i].getId()) !== null) {
 						map.map.setFeatureState({ source: featureSource.getId(), id: e.shapes[i].getProperties()._azureMapsShapeId }, { hovered: true });
 						map.getCanvas().style.cursor = 'pointer';
@@ -976,14 +976,14 @@ export class LabelerApp {
 
 		document.getElementById('dataShiftFilter').options[1].style.display = (self.#hasAZMapAuth) ? '' : 'none';
 
-		//Create a layer control and add it to the map. 
+		//Create a layer control and add it to the map.
 		let layerControl = new SimpleLayerControl(self.#baselayers, true);
 		map.controls.add(layerControl, {
 			position: 'top-left'
 		});
 		self.#layerControl = layerControl;
 
-		//Create a second drawing manager to power selection for bulk editting. 
+		//Create a second drawing manager to power selection for bulk editting.
 		const dm2 = new atlas.drawing.DrawingManager(map, {
 		});
 
@@ -1053,7 +1053,7 @@ export class LabelerApp {
 				mode: mode
 			});
 
-			//Set the bulk edit mode. 
+			//Set the bulk edit mode.
 			self.#bulkEditMode = opt;
 		});
 
@@ -1294,7 +1294,7 @@ export class LabelerApp {
 			}
 			const lineOptions = { strokeColor: fillColorExp };
 
-			//Set colors on main layers.			
+			//Set colors on main layers.
 			self.#outlineLayer.setOptions(lineOptions);
 		}
 
@@ -1327,7 +1327,7 @@ export class LabelerApp {
 
 	/**
 	 * Imports an array of feature into the map.
-	 * @param {*} features Array of features to import.	 
+	 * @param {*} features Array of features to import.
 	 * @param {*} newProps Optional. A set of new properties to assign to the feature.
 	 * @param {*} filter Specifies if the features should be filtered based on the configuration settings.
 	 * @param {*} setClass Specifies if the class values should be set on the features, if not already specified in the feature.
@@ -1445,7 +1445,7 @@ export class LabelerApp {
 				self.#updateShapeColors();
 			}
 
-			//Set visibility of custom data service     			       
+			//Set visibility of custom data service
 			if (cp.customDataService && cp.customDataService !== '' && cp.customDataServiceLabel && cp.customDataServiceLabel !== '') {
 				document.getElementById('customImportBtn').style.display = '';
 				document.querySelector('#customImportBtn span').innerText = cp.customDataServiceLabel;
@@ -1542,7 +1542,7 @@ export class LabelerApp {
 	}
 
 	/**
-	 * Event handler for when a drawing has been drawn, editted, moved, or rotated. 
+	 * Event handler for when a drawing has been drawn, editted, moved, or rotated.
 	 */
 	#drawingComplete(shape) {
 		const self = this;
@@ -1654,7 +1654,7 @@ export class LabelerApp {
 			//Complete the bulk edit phase.
 			self.#classControl.completeBulkEdit();
 
-			//get query values -> show loading screen -> run query in worker -> if success, load data and close flyout. if error, prompt user, leave flyout open.	
+			//get query values -> show loading screen -> run query in worker -> if success, load data and close flyout. if error, prompt user, leave flyout open.
 
 			let osmWizardWorker = self.#osmWizardWorker;
 			if (!osmWizardWorker) {
@@ -1712,7 +1712,7 @@ export class LabelerApp {
 			return;
 		}
 
-		//Import the features. No need to filter as that was done in the worker. 
+		//Import the features. No need to filter as that was done in the worker.
 		this.#importFeatures(e.data, {
 			source: 'OSMOverpass'
 		}, false, true);
@@ -1748,7 +1748,7 @@ export class LabelerApp {
 	 * Gets the drawn shape data as GeoJSON feature collection. Automatically rounds coordinates to 6 decimal places.
 	 * @param {*} classSourceOnly Specifies if only the class properties and source property should be captured.
 	 * @param {*} saveSubType Specifies if shape subType and radius properties should be maintained.
-	 * @returns The drawn shape data as GeoJSON feature collection. 
+	 * @returns The drawn shape data as GeoJSON feature collection.
 	 */
 	#getSourceData(classSourceOnly, saveSubType, preserveId) {
 		const self = this;
@@ -1869,7 +1869,7 @@ export class LabelerApp {
 			await self.#storage.iterate((value, key) => {
 				//Check to see if there is cached data for the named project.
 				if (key === self.config.properties.name) {
-					//Check to see if the user wants to recover it. 
+					//Check to see if the user wants to recover it.
 					if (value && confirm('Found cached data for this project task. Continue from where you left off?')) {
 						self.#featureSource.setShapes(value.data);
 						self.#calcStats();
@@ -1878,7 +1878,7 @@ export class LabelerApp {
 						self.#removeExpireData(key).then();
 					}
 				} else if (value.date < expiryDate) {
-					//Check other cached data to see if it's older than the expiry date. If so, remove it.					
+					//Check other cached data to see if it's older than the expiry date. If so, remove it.
 					self.#removeExpireData(key).then();
 				}
 			});
@@ -1893,7 +1893,7 @@ export class LabelerApp {
 	#saveSettings() {
 		//Only keep track of settings that aren't driven by the config files.
 
-		//Get the checkbox settings.		
+		//Get the checkbox settings.
 		this.#checkSettings.forEach(s => {
 			localStorage.setItem(s, document.getElementById(s).checked);
 		});
@@ -1905,10 +1905,10 @@ export class LabelerApp {
 
 	/** Loads user prefernce settings from previous session. */
 	#loadSettings() {
-		//Only keep track of settings that aren't driven by the config files.		
+		//Only keep track of settings that aren't driven by the config files.
 		const elms = [];
 
-		//Set the checkbox settings.		
+		//Set the checkbox settings.
 		this.#checkSettings.forEach(s => {
 			const e = document.getElementById(s);
 			e.checked = localStorage.getItem(s) !== 'false';
@@ -1967,7 +1967,7 @@ export class LabelerApp {
 			//Save the setting.
 			localStorage.setItem('app-theme', theme);
 
-			//Set the fill color of the popup. 
+			//Set the fill color of the popup.
 			if (self.#popup) {
 				self.#popup.setOptions({ fillColor: color });
 			}

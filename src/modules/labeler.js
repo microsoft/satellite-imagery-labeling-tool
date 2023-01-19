@@ -338,7 +338,7 @@ export class LabelerApp {
 
 				let cdWorker = self.#cdWorker;
 				if (!cdWorker) {
-					cdWorker = new Worker('workers/CustomDataWorker.js');
+					cdWorker = new URL('../workers/CustomDataWorker.js', import.meta.url);
 					cdWorker.onmessage = self.#customImportResponded;
 					self.#cdWorker = cdWorker;
 				}
@@ -1606,7 +1606,7 @@ export class LabelerApp {
 
 			let osmWizardWorker = self.#osmWizardWorker;
 			if (!osmWizardWorker) {
-				osmWizardWorker = new Worker('workers/OsmSearchWorker.js');
+				osmWizardWorker = new URL('../workers/OsmSearchWorker.js', import.meta.url);
 				osmWizardWorker.onmessage = self.#wizardResponded;
 				self.#osmWizardWorker = osmWizardWorker;
 			}

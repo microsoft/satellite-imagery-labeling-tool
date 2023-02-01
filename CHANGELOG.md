@@ -5,6 +5,7 @@
 - Added packaging to bundle and start local server using parcel
 - Changed typos fixed in markdown documents
 - Added docs/Developers-guide.md to document how to set up builds for testing and deployment in a container
+- Added Dockerfile to build and run server
 
 ## 10/24/2022
 

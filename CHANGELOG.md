@@ -11,6 +11,7 @@
 - Changed typos fixed in markdown documents
 - Added docs/Developers-guide.md to document how to set up builds for testing and deployment in a container
 - Developer's guide added with npm command instructions
+- Added Dockerfile to build and run server
 
 ## 10/24/2022
 

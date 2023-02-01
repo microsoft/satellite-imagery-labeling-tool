@@ -1,5 +1,11 @@
 # Changelog
 
+## 2/1/2023
+
+- Added packaging to bundle and start local server using parcel
+- Changed typos fixed in markdown documents
+- Added docs/Developers-guide.md to document how to set up builds for testing and deployment in a container
+
 ## 10/24/2022
 
 - Bug fix: "Uncaught ReferenceError: removeExpireData is not defined".

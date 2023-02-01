@@ -10,7 +10,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "parcel build --public-url ./",
-    "start": "parcel --open",
+    "start": "parcel",
     "clean": "rm -r dist .parcel-cache"
   },
   "repository": {

@@ -1,29 +1,29 @@
 # Labeler tool
 
-The labeler tool is the primary tool that those who will be reviewing the imagery and drawing the data will be using. 
+The labeler tool is the primary tool that those who will be reviewing the imagery and drawing the data will be using.
 
 ![Spatial labeling tool screenshot](assets/Labaler.png)
 
 ## Labeler quickstart
 
-1. Open the [labeling tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/labeler.html). Note that your project adminstrator may have provided an link that will open up your specific task or may point to a forked version of this tool. 
+1. Open the [labeling tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/labeler.html). Note that your project adminstrator may have provided an link that will open up your specific task or may point to a forked version of this tool.
 2. Load a labeling project task file (Optional) - If the URL to the labeler contains something like `?taskUrl=[some text]` the labeler will automatically attempt to load in the project task file. If you have a task file locally, you can open it by going to `Import data -> Local task file` and selecting the local task file. Once loaded the map will zoom into the assigned area and display a yellow dashed outline of the area you are expected to label the imagery within. Instructions from the project administrator may appear and provide some guidance on what data to capture.
 3. Use the drawing tools in the top right corner to draw features on the map. Be sure to select the classification of the data below using the panel below the drawing tools. See [Drawing tools documentation](https://learn.microsoft.com/azure/azure-maps/drawing-tools-interactions-keyboard-shortcuts) for details on all the different ways to draw features on the map.
 4. When you are done, press the `Save` button on the left side panel, and select the desired output format. The default name and `GeoJSON` file format is often the best option and will allow your project administrator to easily combine your data with a larger data set. Imported data may include a lot of additional metadata/properties on each shape, the `Minimize exported properties` option will remove these by default. See the [Result file format](#result-file-format) section for more details on the output data schema.
 
-**TIPs:** 
+**TIPs:**
 
-- The labeler can be used without a task file to create labels. No primary or secondary class will be assigned to the features. The OSM Overpass Wizard will use the viewable map area in it's query for data.
-- Unless disabled in the settings, the labeler will auto save the state of the labeling project as you use the tool. If you want to stop and come back later to complete your labeling, simply close the browser tab. The next time you load the tool with the task file, it will look for any saved data for that task. See the [Auto save feature](#auto-save-feature) section for more information. 
-- If you forgot to do this before hand you can easy update the classification of a shape by either clicking on it when out of drawing mode, and a popup will appear where you can change the individual classification. Alternatively, there are two buttons in the classification panel that allow for bulk updating by either allowing you to click on multiple features, or by drawing a rectangle to select the features to update.
+- The labeler can be used without a task file to create labels. No primary or secondary class will be assigned to the features. The OSM Overpass Wizard will use the viewable map area in its query for data.
+- Unless disabled in the settings, the labeler will auto save the state of the labeling project as you use the tool. If you want to stop and come back later to complete your labeling, simply close the browser tab. The next time you load the tool with the task file, it will look for any saved data for that task. See the [Auto save feature](#auto-save-feature) section for more information.
+- If you forgot to do this beforehand you can easily update the classification of a shape by either clicking on it when out of drawing mode, and a popup will appear where you can change the individual classification. Alternatively, there are two buttons in the classification panel that allow for bulk updating by either allowing you to click on multiple features, or by drawing a rectangle to select the features to update.
 - If you move the map around and lose sight of your task area, use the "Bring your data into view" button in the bottom right corner just above the zoom buttons.
 
 ## Select a layer
 
-The administrator for your project may have specified a selection of imagery layers to use as part of your task. If more than one is specified you can use the "Layers" panel to switch between them. There are too many layers in the layer panel, click on the "Layers" button in the left side panel. In there is the option to uncheck layers and have them not display in the layers selection panel. In this panel you also have the option to import custom layers if desiered. See [Imagery layers](Layers.md) documentation for more information.
+The administrator for your project may have specified a selection of imagery layers to use as part of your task. If more than one is specified you can use the "Layers" panel to switch between them. There are too many layers in the layer panel, click on the "Layers" button in the left side panel. In there is the option to uncheck layers and have them not display in the layers selection panel. In this panel you also have the option to import custom layers if desired. See [Imagery layers](Layers.md) documentation for more information.
 
-**TIP:** In the panel that appears when you press the "Layer" button is filter options that allow you to modify the brighness, contrast, hue rotation, and saturation of the imagery on the map. This can be very helpful in situtations where it is difficult to distriguish the object you are looking for between other neigboring objects, such as vegetation.
-  
+**TIP:** In the panel that appears when you press the "Layer" button is filter options that allow you to modify the brightness, contrast, hue rotation, and saturation of the imagery on the map. This can be very helpful in situations where it is difficult to distinguish the object you are looking for between other neighboring objects, such as vegetation.
+
 ## Import existing data
 
 If you have some existing data you want to import into the labeling tool, there are two ways to do this. The first is to load a supported spatial data file using the `Import data -> Local data file` button. The supported spatial data file formats are GeoJSON, GeoJSONL, KML, KMZ, GeoRSS, GML, CSV (with a column with well known text of features).
@@ -36,28 +36,28 @@ The second way to load existing data is by using the OSM Overpass Wizard using t
 
 ### Add custom OSM wizard scripts
 
-You can create [custom Overpass turbo scripts](https://wiki.openstreetmap.org/wiki/Overpass_API) and add them to the textarea when using the labeler.  
+You can create [custom Overpass turbo scripts](https://wiki.openstreetmap.org/wiki/Overpass_API) and add them to the textarea when using the labeler.
 
-If you have forked this project you can make custom scripts available to your users by add them to the `src -> overpassScripts` folder so they appear in the script dropdown. You can then go into the `src -> settings -> labeler_settings.js` file and add the script to the `overpassScripts` setting. Be sure to use the `{{bbox}}` in your custom queries as the bounding box area of the area of interest for the task will be will be passed in to query the data just for the area of the task. 
+If you have forked this project you can make custom scripts available to your users, add them to the `src -> overpassScripts` folder, so they appear in the script dropdown. You can then go into the `src -> settings -> labeler_settings.js` file and add the script to the `overpassScripts` setting. Be sure to use the `{{bbox}}` in your custom queries as the bounding box area of the area of interest for the task will be passed in to query the data just for the area of the task.
 
 ## Auto save feature
 
-The app will automatically save the drawn data on the map while the user is annotating to a local storage in the browser. This provides a safety feature should the user accidentally close or refresh the browser. When the user returns to the labeler tool and loads a task file with the same project name as previously, if there is any cached data, the user will be asked if they would like to continue from where they left off. If they press cancel, the cached data for that project name will be deleted. All cached data will be deleted after 30 days by default (you can adjust this in the `labeler_settings.js` file under `autoSave -> ttl`). All data stored within the end users browser and is not sent to any servers for security and privacy. 
+The app will automatically save the drawn data on the map while the user is annotating to a local storage in the browser. This provides a safety feature should the user accidentally close or refresh the browser. When the user returns to the labeler tool and loads a task file with the same project name as previously, if there is any cached data, the user will be asked if they would like to continue from where they left off. If they press cancel, the cached data for that project name will be deleted. All cached data will be deleted after 30 days by default (you can adjust this in the `labeler_settings.js` file under `autoSave -> ttl`). All data stored within the end users browser and is not sent to any servers for security and privacy.
 
-By default the app will attempt to cache data using `indexedDB` which provides access to more than enough storage space. If `indexedDB` is disabled or unavailable in the browser, the app will fallback to the `localStorage` API which has a limit of 5MB of storage (roughly enough for 10K simple polygons like building footprints). In most scenarios either of these storage solutions should be sufficient. It is possible that given a large area, and using the OSM importer feature, that more than 10K features would be on the map. If `indexedDB` and `localStorage` API's are not accessible in the browser (rare), this auto save feature will be disabled.
+By default, the app will attempt to cache data using `indexedDB` which provides access to more than enough storage space. If `indexedDB` is disabled or unavailable in the browser, the app will fallback to the `localStorage` API which has a limit of 5MB of storage (roughly enough for 10K simple polygons like building footprints). In most scenarios either of these storage solutions should be sufficient. It is possible that given a large area, and using the OSM importer feature, that more than 10K features would be on the map. If `indexedDB` and `localStorage` API's are not accessible in the browser (rare), this auto save feature will be disabled.
 
 **NOTE:** If your browser or browser tab is in private or incognito mode, the cached data will be lost when the tab is refreshed or the browser is closed.
 
 ## Settings
 
-In addition to the administrator level settings that are used when a task is loaded (such as the ability to disable the OSM Overpass Wizard), there is a set of settings the is local to each user of the laballer. This allows each end user to customize their expertise in a way that makes it easiest for them to label the data. These settings will presist each time the user returns to the labeler and are independant of any individual project labeling task.
+In addition to the administrator level settings that are used when a task is loaded (such as the ability to disable the OSM Overpass Wizard), there is a set of settings the is local to each user of the labeler. This allows each end user to customize their expertise in a way that makes it easiest for them to label the data. These settings will persist each time the user returns to the labeler and are independent of any individual project labeling task.
 
-- Fill polygons - Specifies if polygons drawn on the map should be have their area filled in, or if just their outline should be displayed.
-- Enable snap grid - The drawing tools uses a small grid of a couple of pixels at the maps current zoom level to snap drawn points to. This helps in aligning adjacent points when drawning, making for better looking data.
+- Fill polygons - Specifies if polygons drawn on the map should have their area filled in, or if just their outline should be displayed.
+- Enable snap grid - The drawing tools uses a small grid of a couple of pixels at the maps current zoom level to snap drawn points to. This helps in aligning adjacent points when drawing, making for better looking data.
 - Continuous drawing - When enabled you will be able to draw one shape after the other on the map. You must either select another drawing mode (or the same one) to exit the current drawing mode. This can make things a lot faster, however, some users might find they accidentally draw features a lot and wish to disable this.
-- Continuous delete - When enabled you will be able to delete one shape after another when the delete/erase drawing mode (garbage can) is enabled. By default this is disabled as it can be easy to accidentially delete features if you forget to exist this mode.
-- Shape drage enabled - When enabled you will be able to drag whole features when editting. This is useful but may cause issues for some users when editting points if they don't have the mouse directly over a point (they accidentally end up moving the whole shape). 
-- Shape drage enabled - When enabled you will be able to rotate features when editting. This is useful but may cause issues for some users when editting points if they don't have the mouse directly over a point (they accidentally end up rotating the shape). 
+- Continuous delete - When enabled you will be able to delete one shape after another when the delete/erase drawing mode (garbage can) is enabled. By default, this is disabled as it can be easy to accidentally delete features if you forget to exist this mode.
+- Shape drag enabled - When enabled you will be able to drag whole features when editing. This is useful but may cause issues for some users when editing points if they don't have the mouse directly over a point (they accidentally end up moving the whole shape).
+- Shape rotate enabled - When enabled you will be able to rotate features when editing. This is useful but may cause issues for some users when editing points if they don't have the mouse directly over a point (they accidentally end up rotating the shape).
 - Drawing mode - Specifies features are drawn using a mouse or touch:
     - **click** - Coordinates are added when the mouse or touch is clicked.
     - **freehand** - Coordinates are added when the mouse or touch is dragged on the map.
@@ -66,7 +66,7 @@ In addition to the administrator level settings that are used when a task is loa
 
 ## Take a screenshot
 
-If you want to take a screenshot of your progress, you can use the `Screenshot` tool. 
+If you want to take a screenshot of your progress, you can use the `Screenshot` tool.
 
 ## Result file format
 
@@ -74,26 +74,26 @@ The individual result files from the labeler have the following schema:
 
 ### Feature properties
 
-When saved as a GeoJSON file, the output will be a feature collection with each shape being a feature. When saving the drawn features from the labeler there is an option to limit the properties to just the primary and secondary classes, `source`, and `task_name` properties. If the `saveExtendedGeoJSON` setting in the `src -> settings -> labeler_settings.js` file is set to true, the features `subType` and `radius` will be captured if the shape is a rectangle or circle (default is false). The class property names are defined in the task file (defaults to `class` for the primary class and `secondary_class` for the optional secondary class), and the value assigned when the shape was drawn based on the selected values in the "class" control.The `source` is created by the labeler tool, and provides some insights where the geometry data came from and which imagery layer was displayed when the shape was created or last editted. This source property will be a string with one of the following formats:
+When saved as a GeoJSON file, the output will be a feature collection with each shape being a feature. When saving the drawn features from the labeler there is an option to limit the properties to just the primary and secondary classes, `source`, and `task_name` properties. If the `saveExtendedGeoJSON` setting in the `src -> settings -> labeler_settings.js` file is set to true, the features `subType` and `radius` will be captured if the shape is a rectangle or circle (default is false). The class property names are defined in the task file (defaults to `class` for the primary class and `secondary_class` for the optional secondary class), and the value assigned when the shape was drawn based on the selected values in the "class" control. The `source` is created by the labeler tool, and provides some insights where the geometry data came from and which imagery layer was displayed when the shape was created or last edited. This source property will be a string with one of the following formats:
 
 - `"OSMOverpass"` - The geometry was imported from Open Street Maps using the Overpass turbo API.
-- `Drawn|{imagery layer name}` - The geometry was drawn or editted by the user, and was displaying the specified imagery layer.
-- `LocalFile|{filename}` - The geometry was imported from a local file by the user. Includes the name of the local file. 
+- `Drawn|{imagery layer name}` - The geometry was drawn or edited by the user, and was displaying the specified imagery layer.
+- `LocalFile|{filename}` - The geometry was imported from a local file by the user. Includes the name of the local file.
 - `CustomDataImport` - The geometry was imported using the custom data service set in the project configuration. This only occurs when the project admin has added a custom data service import option to the project.
 
-The `task_name` property contains the name of the task and makes it easier to link back where the feature came from. 
+The `task_name` property contains the name of the task and makes it easier to link back where the feature came from.
 
 If the filter option for class and source properties is not checked, all properties in the features will be exported, including any properties that existed on imported features.
 
-**NOTE:** The administrator may overrise the `class` and `secondary_class` property names in the project builder tool. This will cause the output of the labeling tool to use the administrator specified property names.
+**NOTE:** The administrator may override the `class` and `secondary_class` property names in the project builder tool. This will cause the output of the labeling tool to use the administrator specified property names.
 
 ## Power tools
 
-The power tools section includes a set of advanced tools that more regular users of these tools may find useful. 
+The power tools section includes a set of advanced tools that more regular users of these tools may find useful.
 
 ### Multi delete buttons
 
-Easily delete multiple shapes on the map. 
+Easily delete multiple shapes on the map.
 
 - Rectangle delete - Click this button, then draw a rectangle to delete all intersecting shapes.
 - Polygon delete - Click this button, then draw a polygon to delete all intersecting shapes.

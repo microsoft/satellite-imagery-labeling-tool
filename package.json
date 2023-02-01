@@ -6,11 +6,12 @@
     "doc": "docs",
     "example": "example"
   },
-  "source": "index.html",
+  "source": "src/index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "parcel build",
-    "start": "parcel --open"
+    "build": "parcel build --public-url ./",
+    "start": "parcel --open",
+    "clean": "rm -r dist .parcel-cache"
   },
   "repository": {
     "type": "git",

@@ -74,7 +74,7 @@ satellite-imagery-labeling-tool   latest    a6bb8ad1972a   14 minutes ago   1.32
 ```
 
 ### Pull a Pre-built Image from DockerHub
-TODO: Instructions here after docker hub is set up
+Pre-built images are uploaded to the [umasscds/satellite-imagery-labeling-tool DockerHub repository](https://hub.docker.com/r/umasscds/satellite-imagery-labeling-tool). Instructions for pulling and running the image are on also DockerHub. DockerHub images are created automatically using GitHub actions each time a version tag (starting with '.v') is added in this GitHub repo.
 
 ### Run Container
 Once you have built or pulled your desired image, you can run it in a container.

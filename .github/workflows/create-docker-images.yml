@@ -1,0 +1,27 @@
+
+# Creates a new docker image and pushes it to DockerHub when a version tag is created.
+name: create-docker-images
+on:
+  push:
+    tags:
+      - 'v*.*'
+
+jobs:
+  # Based on instructions from https://www.docker.com/blog/multi-arch-build-and-images-the-simple-way/
+  build-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to docker hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - name: Build and push images
+        run: |
+          docker buildx build --push \
+            --tag umasscds/satellite-imagery-labeling-tool:${{ github.ref_name }} \
+            --platform linux/amd64,linux/arm64 .

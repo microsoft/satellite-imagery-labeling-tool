@@ -1,8 +1,10 @@
 # Developer's Guide
-There are multiple
+There are multiple ways to run the Spatial imagery tool. Here are a few options to get you started.
 
-## Local Use and Development
-This project uses [Parcel](https://parceljs.org/) to run development servers and build packages for [a web app](https://parceljs.org/getting-started/webapp/). The following instructions detail how to use Parcel with Node.js/npm for this project.
+## Option 1: Local Use and Development
+ We recommend this option if you are going to change the application's code or use it only on your own computer and are comfortable with Javascript.
+
+ This project uses [Parcel](https://parceljs.org/) to run development servers and build packages for [a web app](https://parceljs.org/getting-started/webapp/). The following instructions detail how to use Parcel with Node.js/npm for this project.
 
 ### Dependencies
 For development on the Spatial Labeling tool, install [Node.js](https://nodejs.org/en/) and the [Node Package Manager (npm)](https://docs.npmjs.com/) by following the [installation instructions in the npm Docs](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).
@@ -11,18 +13,21 @@ For development on the Spatial Labeling tool, install [Node.js](https://nodejs.o
 From the root of this repository, run `npm install` from the console.
 
 ### Development Server
-You can start a development server at localhost:1234 by running `npm start`.
+You can start a development server at localhost:1234 by running `npm start`. This is recommended for development, because any code changes will be automatically reloaded on the running website.
 
 ### Bundle for Web Server
-To bundle and optimize code for production, run `npm run build`, which packages optimized code for a web server, creating the files in a `dist` folder. The files in `dist` are ready to be hosted on a simple web server.
+To bundle and optimize code for production, run `npm run build`, which packages optimized code for a web server, creating the files in a `dist` folder. The files in `dist` are ready to be hosted on a simple web server, for example in [nginx](https://www.nginx.com/).
 
 ### Cleaning
 If you change the Parcel or Node configurations, you may want to clean up artifacts by running `npm run clean` to remove the `dist` and `.parcel-cache` folders.
 
-## Using Docker Containers for the Application
-With a Docker container, you can use pre-built code to run the application, so you don't need to worry about installing versions of Node.js or npm or running your own web server.
+## Option 2: Run the application in a Docker Container
+With a Docker image, you can use pre-built code to run the application in a container, so the only dependency you need to worry about is Docker. You can also use Docker images to run the application using [Azure Container Instances (ACI)](https://azure.microsoft.com/en-us/products/container-instances) or [Amazon Elastic Container Services (ECS)](https://aws.amazon.com/ecs/).
 
-If you would like to use Docker images and containers to run this application, you should install either [Docker Desktop](https://docs.docker.com/desktop/) or [Docker Engine](https://docs.docker.com/engine/) to get the Docker Command Line Interface.
+We recommend this option if you don't know Javascript well or would like to make the application available to others with a particular configuration.
+
+### Dependencies
+You should install either [Docker Desktop](https://docs.docker.com/desktop/) or [Docker Engine](https://docs.docker.com/engine/) to get the Docker Command Line Interface.
 
 For a more thorough explanation of working with Node.js projects using Docker, see [Docker Docs](https://docs.docker.com/language/nodejs/run-containers/).
 
@@ -68,13 +73,13 @@ REPOSITORY                        TAG       IMAGE ID       CREATED          SIZE
 satellite-imagery-labeling-tool   latest    a6bb8ad1972a   14 minutes ago   1.32GB
 ```
 
-### Pull a Pre-built from DockerHub
+### Pull a Pre-built Image from DockerHub
 TODO: Instructions here after docker hub is set up
 
 ### Run Container
 Once you have built or pulled your desired image, you can run it in a container.
 
-Because the application in the container will be exposed on port 1234, we need to publish the container's 1234 port to a port on our host machine using the `-p` flag. Here we will publish to port 3000. See [this article](https://www.mend.io/free-developer-tools/blog/docker-expose-port/) for a detailed description on working with ports. We will use the `-d` flag to start a container in "detached mode", so the only output will be the container id.
+Because the application in the container will be exposed on port 1234, we need to publish the container's 1234 port to a port on our host machine using the `-p, --publish` flag. Here we will publish to port 3000. See [this article](https://www.mend.io/free-developer-tools/blog/docker-expose-port/) for a detailed description on working with ports. We will use the `-d, --detach` flag to start a container in "detached mode", so the only output will be the container ID.
 ```
 $ docker run -d -p 3000:1234 satellite-imagery-labeling-tool
 bf5d560a8cf5a70a85c372ad5218a39c78867b8fe165b0fa2194b995682feca8

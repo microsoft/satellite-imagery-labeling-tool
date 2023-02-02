@@ -18,7 +18,6 @@ export let mapSettings = {
 
 		//Option 2: Use an Azure Maps key. Get an Azure Maps key at https://azure.com/maps. NOTE: The primary key should be used as the key.
 		authType: "subscriptionKey",
-		//subscriptionKey:"SYB6il1S-a7yYRDKWnIEz70OKERYSPXVp0utTsbrack"
 		subscriptionKey: process.env.AZ_MAPS_SUBSCRIPTION_KEY
 	},
 

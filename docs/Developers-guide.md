@@ -1,12 +1,13 @@
 # Developer's Guide
+There are multiple
 
-## Local Development
-This project uses [Parcel](https://parceljs.org/) to run development servers and build packages for [a web app](https://parceljs.org/getting-started/webapp/). The following instructions detail how to use Parcel with npm for this project.
+## Local Use and Development
+This project uses [Parcel](https://parceljs.org/) to run development servers and build packages for [a web app](https://parceljs.org/getting-started/webapp/). The following instructions detail how to use Parcel with Node.js/npm for this project.
 
 ### Dependencies
 For development on the Spatial Labeling tool, install [Node.js](https://nodejs.org/en/) and the [Node Package Manager (npm)](https://docs.npmjs.com/) by following the [installation instructions in the npm Docs](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).
 
-### Installation
+### Local Installation
 From the root of this repository, run `npm install` from the console.
 
 ### Development Server
@@ -90,4 +91,9 @@ bf5d560a8cf5   satellite-imagery-labeling-tool   "docker-entrypoint.s…"   Abou
 Once you're finished with the application, stop it by running `docker stop <your container id>`.
 
 ### Specifying Azure Maps Subscription Key for Container
-TODO: set secret environment variable AZURE_MAPS_SUBSCRIPTION_KEY
+To enable Azure Maps when running the application in a Docker container, set the `AZURE_MAPS_SUBSCRIPTION_KEY` environment variable using the `--env` flag for the `docker run` command as follows:
+```
+docker run --env AZ_MAPS_SUBSCRIPTION_KEY="<your subscription key here>" -d -p 3000:1234 satellite-imagery-labeling-tool
+```
+
+More details about Azure Maps enabling Azure maps are found in the(Imagery Layers documentation)[Layers.md].

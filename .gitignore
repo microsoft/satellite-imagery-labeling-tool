@@ -85,3 +85,6 @@ jspm_packages/
 
 # Parcel cache
 .parcel-cache/
+
+# Environment file that won't be committed, should be used for storing API keys and configurations
+env.list

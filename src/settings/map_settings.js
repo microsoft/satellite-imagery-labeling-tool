@@ -7,7 +7,7 @@ export let mapSettings = {
 		
 		//Option 1: Use Azure Active Directory authentication for secure access to Azure Maps.
 		authType: "anonymous",
-		clientId: "dddf855e-cf6f-4841-99bc-c159a7b6a82b", //Your Azure Maps client id for accessing your Azure Maps account.
+		clientId: "d069e722-70c3-4dd6-8532-a6f4b18c9bfb", //Your Azure Maps client id for accessing your Azure Maps account.
 		getToken: function (resolve, reject, map) {
 			//URL to your authentication service that retrieves an Azure Active Directory Token.
 			var tokenServiceUrl = "https://spatial-annotation-tool-maps-auth2.azurewebsites.net/api/GetAzureMapsToken";

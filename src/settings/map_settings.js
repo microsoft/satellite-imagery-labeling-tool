@@ -10,7 +10,7 @@ export let mapSettings = {
 		clientId: "dddf855e-cf6f-4841-99bc-c159a7b6a82b", //Your Azure Maps client id for accessing your Azure Maps account.
 		getToken: function (resolve, reject, map) {
 			//URL to your authentication service that retrieves an Azure Active Directory Token.
-			var tokenServiceUrl = "https://spatial-annotation-tool-maps-auth.azurewebsites.net/api/GetAzureMapsToken";
+			var tokenServiceUrl = "https://spatial-annotation-tool-maps-auth2.azurewebsites.net/api/GetAzureMapsToken";
 
 			fetch(tokenServiceUrl).then(r => r.text()).then(token => resolve(token));
 		}

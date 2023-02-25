@@ -17,7 +17,7 @@ The project builder is the tool used by a project administrator to define a labe
 2. Under **User instructions**, type the instructions that you want to display to the user when they use the labeling tool. A preview of your instructions appears under **Instructions preview**.
      * **Tip:** Markdown is allowed for formatting the instructions.
      * **Note:** This field is optional, but it is helpful to provide a short description of what the user should be capturing. 
-3. Click the checkbox next to **Show insturctions on load** if you want your instructions to display to the user when they load the task to the labeling tool. If unchecked, the instructions will be loaded into the instructions panel, but not displayed in the labeling tool when a user loads a task. 
+3. Click the checkbox next to **Show instructions on load** if you want your instructions to display to the user when they load the task to the labeling tool. If unchecked, the instructions will be loaded into the instructions panel, but not displayed in the labeling tool when a user loads a task. 
 4. Click the checkbox next to **Allow OSM overpass wizard** if you want your users to be allowed to import data from Open Street Maps.
      * **Note:** This is optional, but it is useful when working with common spatial objects such as building footprints. However, it is possible that the data may not align with the imagery. If unchecked, this feature is disabled.
      * See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
@@ -27,7 +27,7 @@ The project builder is the tool used by a project administrator to define a labe
   * Under **Button name**, type the name you want to display on the button (i.e., "Add custom data").
   * Under **Data service**, type the URL to the data service with a placeholder "{bbox}" that takes in bounding box coordinates in the format "minLon,minLat,maxLon,maxLat".
     * Important: This must return a GeoJSON feature service. This could be a custom service, or an [OGC API Feature service (WFS 3.0)](https://github.com/opengeospatial/ogcapi-features).
-6. Click the field under **Allowed drawing type(s)** to specifiy what type of features the user can draw. A drop-down menu appears and the following options are available:
+6. Click the field under **Allowed drawing type(s)** to specify what type of features the user can draw. A drop-down menu appears and the following options are available:
    * **Polygons** - polygons, rectangles, and circles
    * **Rectangles** only
    * **Lines**

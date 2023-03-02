@@ -24,7 +24,7 @@ The project builder is the tool used by a project administrator to define a labe
 5. Click the checkbox next to **Allow data import from custom service** if you want to add a custom service that can be used to import data within a bounding box and returns a GeoJSON feature collection. 
    * **Note:** The service must be hosted on a CORs enabled endpoint. 
   
-  Upon checking the **Allow data import from custom service** box, two more fields appear labeled **Button name** and **Data service**:
+Upon checking the **Allow data import from custom service** box, two more fields appear labeled **Button name** and **Data service**:
   * Under **Button name**, type the name you want to display on the button (i.e., "Add custom data").
   * Under **Data service**, type the URL to the data service with a placeholder "{bbox}" that takes in bounding box coordinates in the format "minLon,minLat,maxLon,maxLat".
     * **Important:** This must return a GeoJSON feature service. This could be a custom service, or an [OGC API Feature service (WFS 3.0)](https://github.com/opengeospatial/ogcapi-features).
@@ -92,12 +92,12 @@ For larger labeling jobs, it will likely be much easier to host the task files o
 
 ## Hosting files in a CORs enabled Azure Blob storage
 
-Warning, the following steps will allow the files you load into this blob storage account to be publicly accessible across domains. This is fine in most scenarios for imagery and task files, however, if you have sensitive data, it is better to use local files, or to fork this project and modify it to work with your data in a secure manner.
+**Warning:** The following steps will allow the files you load into this blob storage account to be **publicly accessible across domains**. If you have **sensitive data**, it is better to use local files or fork this project and modify it to work with your data in a secure manner.
 
 1. If you don't have one all ready, go into the Azure portal and create a [blob storage account resource](https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-portal).
 2. Go to the blob storage account resource in the Azure portal that will be hosting your files.
-3. Under "Settings" click on the "Resource Sharing (CORs)" button.
-4. Under the "Blob services" section add new entry with the following options:
+3. Under **Settings** click on the **Resource Sharing (CORs)** button.
+4. Under the **Blob services** section add new entry with the following options:
 
 | Allowed origins | Allowed methods | Allowed headers | Exposed headers | Max age |
 |-----------------|-----------------|-----------------|-----------------|---------|
@@ -105,32 +105,42 @@ Warning, the following steps will allow the files you load into this blob storag
 
 ## Output file format
 
-The output of the project builder is a zip file that has the following structure:
+The output of the project builder is a zip file with following structure:
 
 ![Screenshot of the project builder output folder structure](assets/Project_builder_output.png)
 
-The output zip file will have the same name as the project name you specified, with spaces replaced with underscores (_). The tasks in the task folder also use the project name and have a task number appended to it. The `project_builder_settings.json` file contains all the settings used to create the project. The `summary.csv` file
+* The output zip file will have the same name as the project name you specified, with spaces replaced with underscores (_). 
+* The tasks in the **task** folder also use the project name and have a task number appended to it. 
+* The `project_builder_settings.json` file contains all the settings used to create the project. 
+* The `summary.csv` file contains all of the individual tasks that you defined with the grid in the project builder. This is a useful file for assigning those individual tasks to annotators.
 
-Also see the [Result file format](#result-file-format) documentation for more details on the output data schema of the labeler tool.
+See the [Result file format](#result-file-format) documentation for more details on the output data schema of the labeler tool.
 
 ### Task file format
 
-The individual task files are a GeoJSON file that contain a feature collection with a single feature. The `geometry` of this feature defines the outline of the task area. The `id` of the feature is the ID of the individual task and should match the name of the task file. The `bbox` property is the bounding box area of the `geometry`, and is used by the labeler to set the initial viewing area when the task is loaded. The `properties` of the feature contain the following information:
+The individual task files are GeoJSON files that each contain a feature collection with a single feature. 
+* The `geometry` of this feature defines the outline of the task area. 
+* The `id` of the feature is the ID of the individual task and should match the name of the task file. 
+* The `bbox` property is the bounding box area of the `geometry`, and is used by the labeler to set the initial viewing area when the task is loaded. 
+* The `properties` of the feature contain the following information:
 
 | Property name | Type | Description |
 |--|--|--|
-| `project_name` | `string` | Name of the project. |
-| `name` | `string` | Same as the id of the Feature |
-| `instructions` | `string` | Instructions provided by the admin creating the project. Usually, will be unique to the task at hand. For example: “capture building footprints”.  May contain HTML. |
-| `instructions_on_load` | `boolean` | Indicates if the instructions panel will open when the config file is loaded, starting the user off with the instructions. |
-| `allow_wizard` | `boolean` | Indicates if the user can use the OSM Overpass wizard. If set to false, hide this feature. |
-| `customDataService` | `string` | The display name to show the user for a button that imports data from a custom data service. |
-| `customDataServiceLabel` | `string` | A formatted URL to a custom data service to pull in external data from bounding box. |
-| `drawing_type` | `string` | Specifies the type of drawing a user of the labeler is allowed to do. Options:<br/><br/>· all – Can draw lines, polygons, rectangles, and circles.<br/>· lines – Allows drawing lines.<br/>· polygons – Allows drawing polygons, rectangles, and circles.<br/>· rectangles – Allows drawing rectangles only.<br/><br/>If set to rectangle, OSM wizard will be disabled. |
+| `project_name` | `string` | The name of the project. |
+| `name` | `string` | The same as the id of the Feature. |
+| `instructions` | `string` | Instructions provided by the admin creating the project. <br/><br/>Usually, will be unique to the task at hand. For example: “capture building footprints”.  <br/><br/> May contain HTML. |
+| `instructions_on_load` | `boolean` | Indicates if the instructions panel will open to show users the instructions when the config file is loaded. |
+| `allow_wizard` | `boolean` | Indicates if the user can use the OSM Overpass wizard. <br/><br/>If set to false, hide this feature. |
+| `customDataService` | `string` | The display name that the user sees for a button that imports data from a custom data service. |
+| `customDataServiceLabel` | `string` | A formatted URL to a custom data service to pull in external data from a bounding box. |
+| `drawing_type` | `string` | Specifies the type of drawing a user of the labeler is allowed to do. The options are: <br/><br/>· **all** – Can draw lines, polygons, rectangles, and circles.<br/>· **lines** – Allows drawing lines.<br/>· **polygons** – Allows drawing polygons, rectangles, and circles.<br/>· **rectangles** – Allows drawing rectangles only.<br/><br/>If set to rectangle, OSM wizard will be disabled. |
 | `layers` | `{"[name]": {layeroptions}}` | An object where the key is the name of the layer. Each layer has a set of options as defined in Azure Maps.<br/><br/>· [ImageLayerOptions interface](https://docs.microsoft.com/javascript/api/azure-maps-control/atlas.imagelayeroptions?view=azure-maps-typescript-latest)<br/>· [TileLayerOptions interface](https://docs.microsoft.com/javascript/api/azure-maps-control/atlas.tilelayeroptions?view=azure-maps-typescript-latest)<br/>· [OgcMapLayerOptions interface](https://docs.microsoft.com/javascript/api/azure-maps-spatial-io/atlas.ogcmaplayeroptions?view=azure-maps-typescript-latest)<br/><br/>All options will be extended to include a "type" property that contains the class name of the layer: `ImageLayer`, `TileLayer`, `OgcMapLayer`. |
-| `primary_classes` | `{"property_name":  string,"names": string[],"colors": string[]}` | An object that contains the property name the class is stored in, an array of class names, and array of colors. Names, and colors array expected to be the same length, with name to color pairing having matching indices. |
-| `secondary_classes` | `{"property_name":  string,"names": string[]}` | An object that contains the property name the class is stored in, and an array of class names. |
+| `primary_classes` | `{"property_name":  string,"names": string[],"colors": string[]}` | An object that contains: <br/>· The property name that the class is stored in <br/>· An array of class names <br/>· An array of colors <br/><br/>Names and colors are expected to be the same length, with name to color pairing having matching indices. |
+| `secondary_classes` | `{"property_name":  string,"names": string[]}` | An object that contains: <br/>· The property name the class is stored in <br/>· An array of class names |
 
 ## Project admin settings
 
-If you fork this project you can customize the default settings of the project. The `src -> settings -> project_admin_settings.js` file contains the common settings used by the project builder and viewer tools. The `src -> settings -> map_settings.js` file contains the common settings used by the map in all tools. The `src -> settings -> labeler_settings.js` file contains the settings for the labeler tool.
+If you fork this project, you can customize the default settings of the project. 
+* The `src -> settings -> project_admin_settings.js` file contains the common settings used by the project builder and viewer tools. 
+* The `src -> settings -> map_settings.js` file contains the common settings used by the map in all tools. 
+* The `src -> settings -> labeler_settings.js` file contains the settings for the labeler tool.

@@ -51,13 +51,13 @@ Upon checking the **Allow data import from custom service** box, two more fields
    * Draw a **circle**
    * **Edit** the shape 
 3. If you want to import a spatial data file with your area polygon (or multipolygon), click **Import area** under **Gridding options**.
-   * **Important:** The supported spatial data file formates are GeoJSON, GeoJSONL, KML, KMZ GeoRSS, GML, CSV (with a column with well known text of features).
+   * **Important:** The supported spatial data file formats are GeoJSON, GeoJSONL, KML, KMZ GeoRSS, GML, CSV (with a column with well known text of features).
    * **Note:** Only the first shape in the data file imports.
   
   When the area is drawn or loaded, a grid appears. The grid controls the amount and size of individual task areas that you are able to assign to users of the labeling tool.
 
 4. Under **Grid size units**, adjust the units if necessary.
-5. Under **Grid size**, use the down and up arrows to adjust the size of the grid if necessary. This helps to  adjust the number individual task areas that you want to create.
+5. Under **Grid size**, use the down and up arrows to adjust the size of the grid if necessary. This helps to  adjust the number of individual task areas that you want to create.
 6. Click **Next** to continue to **Step 4: Define classes**, where you define the class information that you want the users to assign to the features they draw.
 ### Step 4: Define classes
 1. Under **Primary class display name**, type the name that you want to display for your primary class information.
@@ -66,7 +66,7 @@ Upon checking the **Allow data import from custom service** box, two more fields
 4. Click the green **plus(+)** button next to the primary class to officially add it. The class name is added to the list with a color picker square next to it.
    * **Note:** The tool allows you to create multiple primary classes. To do so, type another primary class name under **Primary classes** and click the green **plus(+)** button to add it to the list.
    * **Tip:** To change the color of your primary classes, click the color picker square next to its name and choose a color. This is especially useful when you have multiple primary classes.
-5. To capture a secondary class, click he checkbox next to **Capture secondary class**. A series of fields to fill in appear under **Capture secondary class**. The information that you need to fill in here provides similar options for customization as the primary class information, except that there is no option to customize the color of your secondary classes.
+5. To capture a secondary class, click the checkbox next to **Capture secondary class**. A series of fields to fill in appear under **Capture secondary class**. The information that you need to fill in here provides similar options for customization as the primary class information, except that there is no option to customize the color of your secondary classes.
 6. If you choose to capture a secondary class, customize the display name, property name, and add names in a similar manner as the primary class.
 7. Click **Next** to continue to **Step 5: Complete**, where you download the project files.
 ### Step 5: Complete

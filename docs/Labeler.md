@@ -17,7 +17,7 @@ Once loaded the map will zoom into the assigned area and display a yellow dashed
 3. Use the drawing tools in the top right corner to draw features on the map. 
    - Be sure to select the classification of the data using the panel below the drawing tools. 
    - See [Drawing tools documentation](https://learn.microsoft.com/azure/azure-maps/drawing-tools-interactions-keyboard-shortcuts) for details on all the different ways to draw features on the map.
-4. When you are done, press the `Save` button on the left side panel.
+4. When you are done, press the **Save** button on the left side panel.
 5. Select the desired output format. The default name and `GeoJSON` file format is often the best option and will allow your project administrator to easily combine your data with a larger data set. 
    - Imported data may include a lot of additional metadata/properties on each shape. The `Minimize exported properties` option will remove these by default. 
   > **Note:** See the [Result file format](#result-file-format) section for more details on the output data schema.
@@ -50,7 +50,7 @@ If you have some existing data you want to import into the labeling tool, there 
   * The wizard is context aware and will only load in data that does not overlap with any data you have already drawn (your data has priority). 
   * The wizard may also be disabled if the project drawing is limited to rectangles.
 
->**_IMPORTANT:_** Open Street Map (OSM) data is great, but note that in imagery AI and machine learning scenarios it is important that the drawn features align with the imagery being used. Not all imagery is perfectly aligned and you may want to adjust the position of imported data from OSM. In the `Settings` panel you can enable shape dragging, then use the edit button in the drawing toolbar to select features and drag them around the map to align them with the selected imagery.
+>**_IMPORTANT:_** Open Street Map (OSM) data is great, but note that in imagery AI and machine learning scenarios it is important that the drawn features align with the imagery being used. Not all imagery is perfectly aligned and you may want to adjust the position of imported data from OSM. In the **Settings** panel you can enable shape dragging, then use the edit button in the drawing toolbar to select features and drag them around the map to align them with the selected imagery.
 
 ![OSM Overpass Wizard screenshot](assets/OSMOverpassWizard.png)
 
@@ -96,7 +96,7 @@ In addition to the administrator level settings that are used when a task is loa
 
 ## Take a screenshot
 
-If you want to take a screenshot of your progress, you can use the `Screenshot` tool. Here you can specify the **File name** and **Title** of the screenshot. There is also the option to include **stats** (such as the number of shapes) and **legend** (such as the classes and area of interest) in your screenshot.
+If you want to take a screenshot of your progress, you can use the **Screenshot** tool. Here you can specify the **File name** and **Title** of the screenshot. There is also the option to include **stats** (such as the number of shapes) and **legend** (such as the classes and area of interest) in your screenshot.
 
 ## Result file format
 
@@ -130,8 +130,8 @@ The **Power tools** section includes a set of advanced tools that more regular u
 
 The multi-delete buttons allow you to easily delete multiple shapes on the map. There are two multi-delete options: **Rectangle erase** and **Polygon erase**. 
 
-- `Rectangle erase` - Click this button, then draw a rectangle to delete all intersecting shapes.
-- `Polygon erase` - Click this button, then draw a polygon to delete all intersecting shapes.
+- **Rectangle erase** - Click this button, then draw a rectangle to delete all intersecting shapes.
+- **Polygon erase** - Click this button, then draw a polygon to delete all intersecting shapes.
 
 ### Shift data tool
 

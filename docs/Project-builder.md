@@ -1,6 +1,6 @@
 # Project Builder tool
 
-The project builder is the tool used by a project administrator to define a labeling project and break it up into a set of smaller sub-tasks that can be assigned to a group of people who will do the labeling.
+The project builder is the tool used by a project administrator to define a labeling project. In the project builder, administrators can also break the project up into a set of smaller sub-tasks that can be assigned to a group of people who will do the labeling.
 
 ![Project builder tool screenshot](assets/example-user-instructions.png)
 
@@ -9,21 +9,27 @@ The project builder is the tool used by a project administrator to define a labe
 1. Open the [project builder tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/projectBuilder.html). Under the heading labeled **Step 1: Project details**, there are a series of fields for you to fill in. There are five different sections like this to complete.
    
      > **Note:** If you have forked this project, your URL will be different.
+
 2. Choose one of the following: 
-   * To open and edit an existing project that you have saved, click **Load existing project**, which appears above the **Step 1: Project details** heading.
-   * To create a **new project** from scratch, move on to **Step 1: Project Details**.
+   - To open and edit an existing project that you have saved, click **Load existing project**, which appears above the **Step 1: Project details** heading.
+   - To create a **new project** from scratch, move on to **Step 1: Project Details**.
 ### Step 1: Project Details
 1. Under **Project Name**, type the name of your new project. When the user loads one of the generated task files in the labeler tool, the **Project Name** displays in the top left corner.
+     
      > **Note:** This field is required, so you are unable to move to the next step until a **Project Name** is specified.
 
 2. Under **User instructions**, type the instructions that you want to display to the user when they use the labeling tool. This field is optional, but it is helpful to provide a short description of what the user should be capturing. A preview of your instructions appears under **Instructions preview**.
+     
      >**Tip:** Markdown is allowed for formatting the instructions.  
 
 3. Click the checkbox next to **Show instructions on load** if you want your instructions to display to the user when they load the task to the labeling tool. If unchecked, the instructions will be loaded into the instructions panel, but not displayed in the labeling tool when a user loads a task. 
    
 4. Click the checkbox next to **Allow OSM overpass wizard** if you want your users to be allowed to import data from Open Street Maps. This is optional, but it is useful when working with common spatial objects such as building footprints.
+     
      > **Note:** It is possible that the data may not align with the imagery. If unchecked, this feature is disabled. See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
+
 5. Click the checkbox next to **Allow data import from custom service** if you want to add a custom service that can be used to import data within a bounding box and returns a GeoJSON feature collection. 
+     
      > **Important:** The service must be hosted on a CORs enabled endpoint. 
   
      Upon checking the **Allow data import from custom service** box, two more fields appear labeled **Button name** and **Data service**:
@@ -31,6 +37,7 @@ The project builder is the tool used by a project administrator to define a labe
    - Under **Data service**, type the URL to the data service with a placeholder "{bbox}" that takes in bounding box coordinates in the format "minLon,minLat,maxLon,maxLat".
      
      > **Important:** This must return a GeoJSON feature service. This could be a custom service, or an [OGC API Feature service (WFS 3.0)](https://github.com/opengeospatial/ogcapi-features).
+     
 6. Click the field under **Allowed drawing type(s)** to specify what type of features the user can draw. A drop-down menu appears and the following options are available:
    - **Polygons** - polygons, rectangles, and circles
    - **Rectangles** only

@@ -63,6 +63,10 @@ In addition to the administrator level settings that are used when a task is loa
     - **freehand** - Coordinates are added when the mouse or touch is dragged on the map.
     - **hybrid** - Coordinates are added when the mouse or touch is clicked or dragged.
 - Color theme - Different color themes for the labeling tool, such as light and dark.
+- Shape paste mode - When a copied shape is pasted to the map, this specifies where the shapes center is aligned (offset from original shapes center).    
+    - **Map center** - Pasted shape is offset (pixel accuracy) so it's center aligns with the center of the map.
+    - **Mouse pointer** - Pasted shape is offset (pixel accuracy) so it's center aligns with the mouse pointer if the mouse is above the map, otherwise it falls back to the map's center.
+    - **No offset** - Pasted shape overlaps original copied shape.
 
 ## Take a screenshot
 
@@ -102,3 +106,12 @@ Easily delete multiple shapes on the map.
 
 This tool lets you move the shapes a subset of the shapes on the map easily. Simply select what data from the dropdown you want to shift and then click the arrow buttons to shift the shapes one pixel in the direction of the buttons arrow. Press and hold down the button to continuously shift the data until you release the button. This tool is useful when importing data that doesn't align with your projects primary imagery source.
 
+## Copy / Paste shapes
+
+To copy a shape into memory do the following:
+
+1. Select edit mode of the drawing tools.
+2. Select a shape to put it into edit mode.
+3. Press `CTRL + c` to copy the shape into memory.
+
+Once a shape is in memory, you can paste it at any time as long as the map has focus by pressing `CTRL + v`. The shape will be added to the map and put into edit mode so that the user and drag it to a new location if needed. By default the shape will be pasted to the center of the map (shifted with pixel accuracy). In settings the "Shape paste mode" can be modified to center the pasted shape where the mouse pointer is or not to offset the shape at all.

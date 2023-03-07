@@ -2,32 +2,100 @@
 
 The project builder is the tool used by a project administrator to define a labeling project and break it up into a set of smaller sub-tasks that can be assigned to a group of people who will do the labeling.
 
-![Project builder tool screenshot](assets/ProjectBuilder.png)
+![Project builder tool screenshot](assets/example-user-instructions.png)
 
 ## Project Builder quickstart
 
-1. Open the [project builder tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/projectBuilder.html). Note that if you have forked this project your URL will be different.
-2. There are 5 steps to complete. If you have an existing project saved that you want to open and edit, use the "Open existing project" button that appears in the first step.
-3. In step one, define the high level information for the project.
-    - Project name - Required. Specifies the name of the project. This is displayed in the top left corner of the labeler tool when the user loads one of the generated task files. You will not be able to move to the next step until this has been specified.
-    - User instructions - Optional. Additional instructions you want to display to the user when they use the tool. It is good to provide at least a short description of what they should be capturing. Note that markdown can be used to format the instructions and a preview will appear in the "Instructions preview" section.
-    - Show instructions on load - Optional. When enabled the instructions will be displayed to the user when they load the task. If disabled, the instructions will be loaded into the instructions panel, but not opened and display when loading a task.
-    - Allow OSM overpass wizard - Optional. When enabled, users can import data from Open Street Maps. This can be very useful when working with common spatial objects, such as building footprints, however it is possible the data may not align with the imagery. Uncheck this option if you want to disable this feature. See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
-    - Allow data import from custom service - Add a custom service that can be used to import data within a bounding box and returns a GeoJSON feature collection. The service must be hosted on a CORs enabled endpoint.
-      - Button name - The display name to show the user in the button.
-      - Data service - The URL to the data service with a placeholder "{bbox}" that takes in a bounding box coordinates in the format "minLon,minLat,maxLon,maxLat". Must return a GeoJSON feature service. This could be a custom service, or an [OGC API Feature service (WFS 3.0)](https://github.com/opengeospatial/ogcapi-features).
-    - Allowed drawing type(s) - Optional. Allows you to specify what type of features the user can draw. The following options are available:
-      - Polygons - polygons, rectangles, and circles
-      - Rectangles only
-      - Lines
-      - All - any of the above
-4. In step two, load and select imagery layers that should be used in the project. There are some layers available by default as specified in the `src -> settings -> project_admin_settings.js` file. You can add additionally layers using the "+Add new layer(s)" button. See the [Imagery layers documentation](Layers.md) for more details. Use the checkboxes in the layer list to specify which layers will appear in the labeling tool. Press "Next" to go to the next step.
-5. In step three, you define the focus area (area of interest) for the whole project. Zoom the map in, or use the search bar to quickly bring the map to where you want. Then use the drawing tools to draw the area, or import a spatial data file with your area polygon (or multipolygon) using the "Import area" button. The supported spatial data file formats are GeoJSON, GeoJSONL, KML, KMZ, GeoRSS, GML, CSV (with a column with well known text of features). Only the first shape in the data file will be imported. When the area is drawn or loaded, a grid  will appear, these are the individual task areas that you will be able to assign to users of the labeling tool. Adjust the size of the grid using the "Grid size units" and "Gride size" options. Press "Next" to go to the next step.
-6. In step 4, you define the class information you want the users to assign to the features they draw. If you only want to capture one type of information, simply create one primary class. You can customize the display name and property name that captures the class information in the labeling tool. Create classes by typing in the name in the text box that has the green plus (+) beside it, then press that green plus(+) sign button. The class name will be added to a list with a color picker beside it. Click on the color to change it if desired. Optionally, capture a second class by clicking the checkbox, customize the display name, property name, and add names in a similar manner as the primary class. There is no color option for the secondary class. Press "Next" to go to the next step.
-7. In step 5, the generated labeling project can be download. Optionally you can have links to the labeling tool generated with a `&taskUrl=` parameter that will load the individual labeling task from the location you have hosted the files (requires files to be hosted on a CORs enabled endpoint). When ready, press the download button. See [Output file format](#output-file-format) section for more details on the output of the project builder tool.
-8. Share the task files or links to the labeling tool that will load their task file with the people who will be doing the labeling. See [Sharing task files](#sharing-task-files) section for more details.
-9. Once they have completed the labeling and sent you the results, add the output files to the results folder of the project folder. When you have collected all the results, zip the project folder and load it into the project viewer to view and merge all the results. See the [Project viewer documentation](Project-viewer.md) for more details.
+1. Open the [project builder tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/projectBuilder.html). Under the heading labeled **Step 1: Project details**, there are a series of fields for you to fill in. There are five different sections like this to complete.
+   
+     > **Note:** If you have forked this project, your URL will be different.
+2. Choose one of the following: 
+   * To open and edit an existing project that you have saved, click **Load existing project**, which appears above the **Step 1: Project details** heading.
+   * To create a **new project** from scratch, move on to **Step 1: Project Details**.
+### Step 1: Project Details
+1. Under **Project Name**, type the name of your new project. When the user loads one of the generated task files in the labeler tool, the **Project Name** displays in the top left corner.
+     > **Note:** This field is required, so you are unable to move to the next step until a **Project Name** is specified.
 
+2. Under **User instructions**, type the instructions that you want to display to the user when they use the labeling tool. This field is optional, but it is helpful to provide a short description of what the user should be capturing. A preview of your instructions appears under **Instructions preview**.
+     >**Tip:** Markdown is allowed for formatting the instructions.  
+
+3. Click the checkbox next to **Show instructions on load** if you want your instructions to display to the user when they load the task to the labeling tool. If unchecked, the instructions will be loaded into the instructions panel, but not displayed in the labeling tool when a user loads a task. 
+   
+4. Click the checkbox next to **Allow OSM overpass wizard** if you want your users to be allowed to import data from Open Street Maps. This is optional, but it is useful when working with common spatial objects such as building footprints.
+     > **Note:** It is possible that the data may not align with the imagery. If unchecked, this feature is disabled. See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
+5. Click the checkbox next to **Allow data import from custom service** if you want to add a custom service that can be used to import data within a bounding box and returns a GeoJSON feature collection. 
+     > **Important:** The service must be hosted on a CORs enabled endpoint. 
+  
+     Upon checking the **Allow data import from custom service** box, two more fields appear labeled **Button name** and **Data service**:
+   - Under **Button name**, type the name you want to display on the button (i.e., "Add custom data").
+   - Under **Data service**, type the URL to the data service with a placeholder "{bbox}" that takes in bounding box coordinates in the format "minLon,minLat,maxLon,maxLat".
+     
+     > **Important:** This must return a GeoJSON feature service. This could be a custom service, or an [OGC API Feature service (WFS 3.0)](https://github.com/opengeospatial/ogcapi-features).
+6. Click the field under **Allowed drawing type(s)** to specify what type of features the user can draw. A drop-down menu appears and the following options are available:
+   - **Polygons** - polygons, rectangles, and circles
+   - **Rectangles** only
+   - **Lines**
+   - **All** - any of the above
+  <br><br>
+7. Click **Next** to continue to **Step 2: Add Layers**, where you can add and/or import the imagery layers that you want to appear in the labeling tool and be used in the project.
+### Step 2: Add Layers
+1. Under **Layer List**, click the checkbox next to the imagery layers that should appear in the labeling tool and be used in the project. There are some layers available by default, as specified in the `src -> settings -> project_admin_settings.js` file. 
+   
+2. To add your own imagery layers, click **+Add new layer(s)**. See the [Imagery layers documentation](Layers.md) for more details. 
+3. Click **Next** to continue to **Step 3: Create focus area**, where you define the area of interest for the whole project.
+### Step 3: Create focus area
+1. Zoom in on the map to the focus area of your project. You can do this a few different ways:
+   -  Type your area of interest into the **search bar** at the top left of the map, next to the magnifying glass icon.
+   - Use your **mouse** or **keypad** to zoom in to the focus area.
+   - Use the **plus(+)** and **minus(-)** buttons at the bottom right corner of the map to zoom in or out of the focus area.
+  <br><br>
+2. Use the drawing tools to draw the area of interest by clicking on one of the icons before drawing. There are four tools to work with: 
+   - Draw a **polygon**
+   - Draw a **square**
+   - Draw a **circle**
+   - **Edit** the shape 
+  <br><br>
+
+3. If you want to import a spatial data file with your area polygon (or multipolygon), click **Import area** under **Gridding options**. Only the first shape in the data file imports.
+
+   > **Important:** The supported spatial data file formats are GeoJSON, GeoJSONL, KML, KMZ GeoRSS, GML, CSV (with a column with well known text of features).
+  
+     When the area is drawn or loaded, a grid appears. The grid controls the amount and size of individual task areas that you are able to assign to users of the labeling tool.
+
+4. Under **Grid size units**, adjust the units if necessary.
+   
+5. Under **Grid size**, use the down and up arrows to adjust the size of the grid. This helps to  adjust the number of individual task areas that you want to create.
+   
+6. Click **Next** to continue to **Step 4: Define classes**, where you define the class information that you want the users to assign to the features they draw.
+### Step 4: Define classes
+1. Under **Primary class display name**, type the name that you want to display for your primary class information.
+   
+2. Under **Primary class property name**, type the property name that captures the primary class information in the labeling tool.
+   
+3. Under **Primary classes**, type the name of the primary class.
+   
+4. Click the green **plus(+)** button next to the primary class to officially add it. The class name is added to the list with a color picker square next to it.
+   
+   > **Note:** The tool allows you to create multiple primary classes. To do so, type another primary class name under **Primary classes** and click the green **plus(+)** button to add it to the list.
+
+     To change the color of your primary classes, click the color picker square next to its name and choose a color. This is especially useful when you have multiple primary classes.
+
+5. To capture a secondary class, click the checkbox next to **Capture secondary class**. A series of fields to fill in appear under **Capture secondary class**. The information that you need to fill in here provides similar options for customization as the primary class information, except that there is no option to customize the color of your secondary classes.
+   
+6. If you choose to capture a secondary class, customize the display name, property name, and add names in a similar manner as the primary class.
+   
+7. Click **Next** to continue to **Step 5: Complete**, where you download the project files.
+### Step 5: Complete
+1.  If you want to have links to the labeling tool generated with a `&taskUrl=` parameter that will load the individual labeling task from the location you have hosted the files, click the checkbox next to **Include task file links in summary**. 
+   
+    >  **Note:** This requires files to be hosted on a CORs enabled endpoint.
+
+     See the [Output file format](#output-file-format) section for more details on the output of the project builder tool.
+
+2.  Click **Download project files** to download.
+3.  Share the task files or links to the labeling tool that will load their task file with the people who will be doing the labeling. See [Sharing task files](#sharing-task-files) section for more details.
+4.  Once the users have completed the labeling and sent you the results, add the output files to the **results** folder of the overall project folder. 
+5.  When you have collected all the results, zip the overall project folder and load it into the **project viewer** to view and merge all the results. See the [Project viewer documentation](Project-viewer.md) for more details.
 ## Sharing task files
 
 Once the task files for your project have been created you will most likely want to assign/share them with the users who will be doing the labeling. For smaller projects, the easiest method would be to email a task file to each individual user and keep track of the progress in the generated `summary.csv` file. For larger labeling jobs, it will likely be much easier to host the task files on a CORs enabled endpoint, such as Azure Blob storage, and then send out a URL with the link to the labeler with the task file URL passed into the `taskUrl` URL parameter `https://example.com/labeler.html?taskUrl=[URL to hosted task file]`. Note that the hosting location of the task files will need CORs and `https` enabled. See the next section for an example of one way to do this. See [Output file format](#output-file-format) section for more details on the output of the project builder tool.

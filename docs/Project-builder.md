@@ -1,6 +1,6 @@
 # Project Builder tool
 
-The project builder is the tool used by a project administrator to define a labeling project and break it up into a set of smaller sub-tasks that can be assigned to a group of people who will do the labeling.
+The project builder is the tool used by a project administrator to define a labeling project. In the project builder, administrators can also break the project up into a set of smaller sub-tasks that can be assigned to a group of people who will do the labeling.
 
 ![Project builder tool screenshot](assets/example-user-instructions.png)
 
@@ -14,15 +14,19 @@ The project builder is the tool used by a project administrator to define a labe
    * To create a **new project** from scratch, move on to **Step 1: Project Details**.
 ### Step 1: Project Details
 1. Under **Project Name**, type the name of your new project. When the user loads one of the generated task files in the labeler tool, the **Project Name** displays in the top left corner.
-     > **Note:** This field is required, so you are unable to move to the next step until a **Project Name** is specified.
+    
+    > **Note:** This field is required, so you are unable to move to the next step until a **Project Name** is specified.
 
 2. Under **User instructions**, type the instructions that you want to display to the user when they use the labeling tool. This field is optional, but it is helpful to provide a short description of what the user should be capturing. A preview of your instructions appears under **Instructions preview**.
+     
      >**Tip:** Markdown is allowed for formatting the instructions.  
 
 3. Click the checkbox next to **Show instructions on load** if you want your instructions to display to the user when they load the task to the labeling tool. If unchecked, the instructions will be loaded into the instructions panel, but not displayed in the labeling tool when a user loads a task. 
    
 4. Click the checkbox next to **Allow OSM overpass wizard** if you want your users to be allowed to import data from Open Street Maps. This is optional, but it is useful when working with common spatial objects such as building footprints.
+     
      > **Note:** It is possible that the data may not align with the imagery. If unchecked, this feature is disabled. See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
+
 5. Click the checkbox next to **Allow data import from custom service** if you want to add a custom service that can be used to import data within a bounding box and returns a GeoJSON feature collection. 
      > **Important:** The service must be hosted on a CORs enabled endpoint. 
   
@@ -68,6 +72,7 @@ The project builder is the tool used by a project administrator to define a labe
    
 6. Click **Next** to continue to **Step 4: Define classes**, where you define the class information that you want the users to assign to the features they draw.
 ### Step 4: Define classes
+This step is particularly important for configuring a project for labeling. See examples throughout this section on how to configure a project for **building segmentation and damage assessment labeling**.
 1. Under **Primary class display name**, type the name that you want to display for your primary class information.
    
 2. Under **Primary class property name**, type the property name that captures the primary class information in the labeling tool.
@@ -75,14 +80,21 @@ The project builder is the tool used by a project administrator to define a labe
 3. Under **Primary classes**, type the name of the primary class.
    
 4. Click the green **plus(+)** button next to the primary class to officially add it. The class name is added to the list with a color picker square next to it.
-   
+
+     ![Project builder tool screenshot](assets/primary-class-example.png)
    > **Note:** The tool allows you to create multiple primary classes. To do so, type another primary class name under **Primary classes** and click the green **plus(+)** button to add it to the list.
 
      To change the color of your primary classes, click the color picker square next to its name and choose a color. This is especially useful when you have multiple primary classes.
 
 5. To capture a secondary class, click the checkbox next to **Capture secondary class**. A series of fields to fill in appear under **Capture secondary class**. The information that you need to fill in here provides similar options for customization as the primary class information, except that there is no option to customize the color of your secondary classes.
-   
-6. If you choose to capture a secondary class, customize the display name, property name, and add names in a similar manner as the primary class.
+     
+     ![Project builder tool screenshot](assets/secondary-class-example.png)
+
+6. If you choose to capture a secondary class, customize the display name, property name, and add names in a similar manner as the primary class.   
+
+   ![Project builder tool screenshot](assets/damage-severity-example.png)
+
+   > The above image shows an example project configuration that might be used for building segmentation and damage assessment.
    
 7. Click **Next** to continue to **Step 5: Complete**, where you download the project files.
 ### Step 5: Complete

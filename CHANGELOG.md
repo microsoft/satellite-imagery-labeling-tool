@@ -2,7 +2,7 @@
 
 ## 3/6/2023
 
-- Added copy/paste capability to labeler tool as requested in [issue #10](https://github.com/microsoft/satellite-imagery-labeling-tool/issues/10). See [docs for more information](https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Labeler.md#copy-paste-shapes). 
+- Added copy/paste capability to labeler tool as requested in [issue #10](https://github.com/microsoft/satellite-imagery-labeling-tool/issues/10). See [docs for more information](https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Labeler.md#copy--paste-shapes). 
 - Bug fix: Address [issue #11](https://github.com/microsoft/satellite-imagery-labeling-tool/issues/11) related to secondary class not being captured in labeler tool. 
 
 ## 10/24/2022

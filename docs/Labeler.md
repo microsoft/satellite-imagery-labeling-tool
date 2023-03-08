@@ -7,33 +7,45 @@ The labeler tool is the primary tool that those who will be reviewing the imager
 ## Labeler quickstart
 
 1. Open the [labeling tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/labeler.html). 
-   - **Note** that your project adminstrator may have provided an link that will open up your specific task or may point to a forked version of this tool.
+   
+   > **Note** that your project adminstrator may have provided an link that will open up your specific task or may point to a forked version of this tool.
+
 2. Load a labeling project task file (Optional) 
    - If the URL to the labeler contains something like `?taskUrl=[some text]` the labeler will automatically attempt to load in the project task file. 
    - If you have a task file locally, you can open it by going to `Import data -> Local task file` and selecting the local task file. 
 
-Once loaded the map will zoom into the assigned area and display a yellow dashed outline of the area you are expected to label the imagery within. Instructions from the project administrator may appear and provide some guidance on what data to capture.
+    <br>Once loaded the map will zoom into the assigned area and display a yellow dashed outline of the area you are expected to label the imagery within. Instructions from the project administrator may appear and provide some guidance on what data to capture.
 
 3. Use the drawing tools in the top right corner to draw features on the map. 
    - Be sure to select the classification of the data using the panel below the drawing tools. 
    - See [Drawing tools documentation](https://learn.microsoft.com/azure/azure-maps/drawing-tools-interactions-keyboard-shortcuts) for details on all the different ways to draw features on the map.
-4. When you are done, press the **Save** button on the left side panel.
-5. Select the desired output format. The default name and `GeoJSON` file format is often the best option and will allow your project administrator to easily combine your data with a larger data set. 
-   - Imported data may include a lot of additional metadata/properties on each shape. The `Minimize exported properties` option will remove these by default. 
-  > **Note:** See the [Result file format](#result-file-format) section for more details on the output data schema.
+ <br><br>
+4. When finished, press the **Save** button on the left side panel.
+5. Select the desired output format. The default name and `GeoJSON` file format is often the best option, and will allow your project administrator to easily combine your data with a larger data set. 
+   > **Note:** Imported data may include a lot of additional metadata/properties on each shape. The `Minimize exported properties` option will remove these by default. 
+    
+    See the [Result file format](#result-file-format) section for more details on the output data schema.
 
-**Tips:**
+## Helpful tips for the labeler tool
 
-- The labeler can be used **without a task file** to create labels. No primary or secondary class will be assigned to the features. The OSM Overpass Wizard will use the viewable map area in its query for data.
-- Unless disabled in the settings, the labeler will **auto save** the state of the labeling project as you use the tool. If you want to stop and come back later to complete your labeling, simply close the browser tab. The next time you load the tool with the task file, it will look for any saved data for that task. See the [Auto save feature](#auto-save-feature) section for more information.
-- If you forgot to do this beforehand you can easily **update the classification** of a shape by clicking on it when out of drawing mode. A pop-up menu appears where you can change the individual classification. Alternatively, there are two buttons in the classification panel that allow for bulk updating by either allowing you to click on multiple features, or by drawing a rectangle to select the features to update.
-- If you move the map around and lose sight of your task area, use the **Bring your data into view** button in the bottom right corner just above the zoom buttons.
+### Use the labeler without a task file
+The labeler can be used **without a task file** to create labels. No primary or secondary class will be assigned to the features. The OSM Overpass Wizard will use the viewable map area in its query for data.
+
+### Auto save your project
+Unless disabled in the settings, the labeler will **auto save** the state of the labeling project as you use the tool. If you want to stop and come back later to complete your labeling, simply close the browser tab. The next time you load the tool with the task file, it will look for any saved data for that task. See the [Auto save feature](#auto-save-feature) section for more information.
+
+### Update the classification of a shape
+If you forgot to do this beforehand you can easily **update the classification** of a shape by clicking on it when out of drawing mode. A pop-up menu appears where you can change the individual classification. Alternatively, there are two buttons in the classification panel that allow for bulk updating by either allowing you to click on multiple features, or by drawing a rectangle to select the features to update.
+
+### Quickly bring your task area back into view
+If you move the map around and lose sight of your task area, use the **Bring your data into view** button in the bottom right corner, just above the zoom buttons.
 
 ## Select a layer
 
 The administrator for your project may have specified a selection of imagery layers to use as part of your task. 
-* If more than one layer is specified, you can use the **Layers** panel to switch between them. 
-* If there are too many layers in the layer panel, click on the **Layers** button in the left side panel. In there is the option to uncheck layers and have them not display in the layers selection panel. In this panel you also have the option to import custom layers if desired. See [Imagery layers](Layers.md) documentation for more information.
+
+- If more than one layer is specified, you can use the **Layers** panel to switch between them. 
+- If there are too many layers in the layer panel, click on the **Layers** button in the left side panel. In there is the option to uncheck layers and have them not display in the layers selection panel. In this panel you also have the option to import custom layers if desired. See [Imagery layers](Layers.md) documentation for more information.
 
 ### Adjusting the appearance of imagery on the map: 
 
@@ -52,23 +64,26 @@ If you have some existing data you want to import into the labeling tool, there 
 
 >**_IMPORTANT:_** Open Street Map (OSM) data is great, but note that in imagery AI and machine learning scenarios it is important that the drawn features align with the imagery being used. Not all imagery is perfectly aligned and you may want to adjust the position of imported data from OSM. In the **Settings** panel you can enable shape dragging, then use the edit button in the drawing toolbar to select features and drag them around the map to align them with the selected imagery.
 
+<br>
+
 ![OSM Overpass Wizard screenshot](assets/OSMOverpassWizard.png)
 
 ### Add custom OSM wizard scripts
 
 You can create [custom Overpass turbo scripts](https://wiki.openstreetmap.org/wiki/Overpass_API) and add them to the text area when using the labeler.
 
-* If you have forked this project, you can make custom scripts available to your users by adding them to the `src -> overpassScripts` folder, so they appear in the script dropdown.
-* You can then go into the `src -> settings -> labeler_settings.js` file and add the script to the `overpassScripts` setting. 
-* Be sure to use the `{{bbox}}` in your custom queries as the bounding box area of the area of interest for the task will be passed in to query the data just for the area of the task.
+If you have forked this project, you can make custom scripts available to your users by following these steps: 
+1. Add the custom scripts to the `src -> overpassScripts` folder, so they appear in the script dropdown.
+2. Open the `src -> settings -> labeler_settings.js` file and add the script to the `overpassScripts` setting. 
+3. Use the `{{bbox}}` in your custom queries as the bounding box area of the area of interest for the task will be passed in to query the data just for the area of the task.
 
 ## Auto save feature
 
-The app will automatically save the drawn data on the map while the user is annotating to a local storage in the browser. This provides a safety feature should the user accidentally close or refresh the browser. When the user returns to the labeler tool and loads a task file with the same project name as previously, if there is any cached data, the user will be asked if they would like to continue from where they left off. 
+The app will automatically save the drawn data on the map to a local storage in the browser while the user is annotating. This provides a safety feature should the user accidentally close or refresh the browser. When the user returns to the labeler tool and loads a task file with the same project name as previously, if there is any cached data, the user will be asked if they would like to continue from where they left off. 
 
 **If they press cancel, the cached data for that project name will be deleted.** 
 
-All cached data will be **deleted after 30 days** by default (you can adjust this in the `labeler_settings.js` file under `autoSave -> ttl`). All data stored within the end user's browser and is not sent to any servers for security and privacy.
+All cached data will be **deleted after 30 days** by default (you can adjust this in the `labeler_settings.js` file under `autoSave -> ttl`). All data is stored within the end user's browser and is not sent to any servers for security and privacy.
 
 By default, the app will attempt to cache data using `indexedDB` which provides access to more than enough storage space. 
 * If `indexedDB` is disabled or unavailable in the browser, the app will fallback to the `localStorage` API which has a limit of 5MB of storage (roughly enough for 10K simple polygons like building footprints). 

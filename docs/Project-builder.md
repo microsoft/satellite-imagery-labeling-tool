@@ -103,7 +103,7 @@ The project builder is the tool used by a project administrator to define a labe
 3.  Share the task files or links to the labeling tool that will load their task file with the people who will be doing the labeling. See [Sharing task files](#sharing-task-files) section for more details.
 4.  Once the users have completed the labeling and sent you the results, add the output files to the **results** folder of the overall project folder. 
 5.  When you have collected all the results, zip the overall project folder and load it into the **project viewer** to view and merge all the results. See the [Project viewer documentation](Project-viewer.md) for more details.
-
+<br><br>
 ## Sharing task files
 
 Once the task files for your project have been created you will most likely want to assign/share them with the users who will be doing the labeling. 
@@ -114,10 +114,12 @@ For larger labeling jobs, it will likely be much easier to host the task files o
 > **Note** that the hosting location of the task files will need CORs and `https` enabled. See the next section for an example of one way to do this. 
  
  See [Output file format](#output-file-format) section for more details on the output of the project builder tool.
-
+<br><br>
 ## Hosting files in a CORs enabled Azure Blob storage
 
-**Warning:** The following steps will allow the files you load into this blob storage account to be **publicly accessible across domains**. If you have **sensitive data**, it is better to use local files or fork this project and modify it to work with your data in a secure manner.
+> **WARNING:** The following steps will allow the files you load into this blob storage account to be **publicly accessible across domains**. If you have **sensitive data**, it is better to use local files or fork this project and modify it to work with your data in a secure manner.
+
+Follow these steps to host files in a CORs enabled Azure blob storage:
 
 1. If you don't have one already, go into the Azure portal and create a [blob storage account resource](https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-portal).
 2. Go to the blob storage account resource in the Azure portal that will be hosting your files.
@@ -127,7 +129,7 @@ For larger labeling jobs, it will likely be much easier to host the task files o
 | Allowed origins | Allowed methods | Allowed headers | Exposed headers | Max age |
 |-----------------|-----------------|-----------------|-----------------|---------|
 | `*` | `GET` | `*` | `*` | `360000` |
-
+<br>
 ## Output file format
 
 The output of the project builder is a zip file with following structure:
@@ -162,7 +164,7 @@ The individual task files are GeoJSON files that each contain a feature collecti
 | `layers` | `{"[name]": {layeroptions}}` | An object where the key is the name of the layer. Each layer has a set of options as defined in Azure Maps.<br/><br/>· [ImageLayerOptions interface](https://docs.microsoft.com/javascript/api/azure-maps-control/atlas.imagelayeroptions?view=azure-maps-typescript-latest)<br/>· [TileLayerOptions interface](https://docs.microsoft.com/javascript/api/azure-maps-control/atlas.tilelayeroptions?view=azure-maps-typescript-latest)<br/>· [OgcMapLayerOptions interface](https://docs.microsoft.com/javascript/api/azure-maps-spatial-io/atlas.ogcmaplayeroptions?view=azure-maps-typescript-latest)<br/><br/>All options will be extended to include a "type" property that contains the class name of the layer: `ImageLayer`, `TileLayer`, `OgcMapLayer`. |
 | `primary_classes` | `{"property_name":  string,"names": string[],"colors": string[]}` | An object that contains: <br/>· The property name that the class is stored in <br/>· An array of class names <br/>· An array of colors <br/><br/>Names and colors are expected to be the same length, with name to color pairing having matching indices. |
 | `secondary_classes` | `{"property_name":  string,"names": string[]}` | An object that contains: <br/>· The property name the class is stored in <br/>· An array of class names |
-
+<br>
 ## Project admin settings
 
 If you fork this project, you can customize the default settings of the project. 

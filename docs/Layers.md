@@ -25,9 +25,13 @@ You can easily access Azure Maps by following these steps:
 
 The project builder and labeler tool use the same functionality to import external imagery layers.
 
-> **Note:** Any URL's should be to hosted services. URL's that point to the local file directory will not be accepted by the browsers security. If you have content, such as map tiles, on your local file system that you want to bring into one of the tools as a layer, you will need to host that data somewhere. Setting up a local service on `localhost` is one option if only you want access to this data. If you want to make the data available to others, you will need to host it on a CORs enabled server. For more details, see the next section on hosting files in a CORs enabled Azure Blob storage.
+> **_Note:_** Any URL's should be to hosted services. URL's that point to the local file directory will not be accepted by the browsers security. 
 
-The following sections show how to import the different types of layers. All layers are required to have **a unique layer name** for easy identification.
+If you have content, such as map tiles, on your local file system that you want to bring into one of the tools as a layer, you will need to host that data somewhere. 
+- Setting up a local service on `localhost` is one option if only you want access to this data. 
+- If you want to make the data available to others, you will need to host it on a CORs enabled server. For more details, see the **Hosting files in a CORs enabled Azure Blob storage** section in the [Project builder documentation](Project-builder.md).
+
+<br>The following sections show how to import the different types of layer. All layers are required to have **a unique layer name** for easy identification.
 
 ### Add a tile layer
 

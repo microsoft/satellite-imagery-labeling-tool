@@ -37,7 +37,7 @@ The project builder is the tool used by a project administrator to define a labe
    - Under **Data service**, type the URL to the data service with a placeholder "{bbox}" that takes in bounding box coordinates in the format "minLon,minLat,maxLon,maxLat".
      
      > **Important:** This must return a GeoJSON feature service. This could be a custom service, or an [OGC API Feature service (WFS 3.0)](https://github.com/opengeospatial/ogcapi-features).
-     
+
 6. Click the field under **Allowed drawing type(s)** to specify what type of features the user can draw. A drop-down menu appears and the following options are available:
    - **Polygons** - polygons, rectangles, and circles
    - **Rectangles** only
@@ -111,17 +111,18 @@ Once the task files for your project have been created you will most likely want
 For smaller projects, the easiest method would be to email a task file to each individual user and keep track of the progress in the generated `summary.csv` file. 
 ### For larger labeling jobs
 For larger labeling jobs, it will likely be much easier to host the task files on a CORs enabled endpoint, such as Azure Blob storage, and then send out a URL with the link to the labeler with the task file URL passed into the `taskUrl` URL parameter `https://example.com/labeler.html?taskUrl=[URL to hosted task file]`. 
-* Note that the hosting location of the task files will need CORs and `https` enabled. See the next section for an example of one way to do this. 
-* See [Output file format](#output-file-format) section for more details on the output of the project builder tool.
+> **Note** that the hosting location of the task files will need CORs and `https` enabled. See the next section for an example of one way to do this. 
+ 
+ See [Output file format](#output-file-format) section for more details on the output of the project builder tool.
 
 ## Hosting files in a CORs enabled Azure Blob storage
 
 **Warning:** The following steps will allow the files you load into this blob storage account to be **publicly accessible across domains**. If you have **sensitive data**, it is better to use local files or fork this project and modify it to work with your data in a secure manner.
 
-1. If you don't have one all ready, go into the Azure portal and create a [blob storage account resource](https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-portal).
+1. If you don't have one already, go into the Azure portal and create a [blob storage account resource](https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-portal).
 2. Go to the blob storage account resource in the Azure portal that will be hosting your files.
-3. Under **Settings** click on the **Resource Sharing (CORs)** button.
-4. Under the **Blob services** section add new entry with the following options:
+3. Under **Settings**, click on the **Resource Sharing (CORs)** button.
+4. Under the **Blob services** section, add new entry with the following options:
 
 | Allowed origins | Allowed methods | Allowed headers | Exposed headers | Max age |
 |-----------------|-----------------|-----------------|-----------------|---------|
@@ -133,10 +134,10 @@ The output of the project builder is a zip file with following structure:
 
 ![Screenshot of the project builder output folder structure](assets/Project_builder_output.png)
 
-* The output zip file will have the same name as the project name you specified, with spaces replaced with underscores (_). 
-* The tasks in the **task** folder also use the project name and have a task number appended to it. 
+* The **output zip file** will have the same name as the project name you specified, with spaces replaced with underscores (_). 
+* The tasks in the **task** folder use the project name, and have a task number appended to it. 
 * The `project_builder_settings.json` file contains all the settings used to create the project. 
-* The `summary.csv` file contains all of the individual tasks that you defined with the grid in the project builder. This is a useful file for assigning those individual tasks to annotators.
+* The `summary.csv` file contains all of the individual tasks that you defined using the grid in the project builder. This is a useful file for assigning those individual tasks to annotators.
 
 See the [Result file format](#result-file-format) documentation for more details on the output data schema of the labeler tool.
 

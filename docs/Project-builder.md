@@ -8,14 +8,14 @@ The project builder is the tool used by a project administrator to define a labe
 
 1. Open the [project builder tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/projectBuilder.html). Under the heading labeled **Step 1: Project details**, there are a series of fields for you to fill in. There are five different sections like this to complete.
    
-     > **Note:** If you have forked this project, your URL will be different.
+     > **Note** that if you have forked this project, your URL will be different.
 2. Choose one of the following: 
    * To open and edit an existing project that you have saved, click **Load existing project**, which appears above the **Step 1: Project details** heading.
    * To create a **new project** from scratch, move on to **Step 1: Project Details**.
 ### Step 1: Project Details
 1. Under **Project Name**, type the name of your new project. When the user loads one of the generated task files in the labeler tool, the **Project Name** displays in the top left corner.
     
-    > **Note:** This field is required, so you are unable to move to the next step until a **Project Name** is specified.
+    > **Note** that this field is required, so you are unable to move to the next step until a **Project Name** is specified.
 
 2. Under **User instructions**, type the instructions that you want to display to the user when they use the labeling tool. This field is optional, but it is helpful to provide a short description of what the user should be capturing. A preview of your instructions appears under **Instructions preview**.
      
@@ -25,7 +25,7 @@ The project builder is the tool used by a project administrator to define a labe
    
 4. Click the checkbox next to **Allow OSM overpass wizard** if you want your users to be allowed to import data from Open Street Maps. This is optional, but it is useful when working with common spatial objects such as building footprints.
      
-     > **Note:** It is possible that the data may not align with the imagery. If unchecked, this feature is disabled. See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
+     > **Note** that it is possible that the data may not align with the imagery. If unchecked, this feature is disabled. See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
 
 5. Click the checkbox next to **Allow data import from custom service** if you want to add a custom service that can be used to import data within a bounding box and returns a GeoJSON feature collection. 
      > **Important:** The service must be hosted on a CORs enabled endpoint. 
@@ -82,7 +82,7 @@ This step is particularly important for configuring a project for labeling. See 
 4. Click the green **plus(+)** button next to the primary class to officially add it. The class name is added to the list with a color picker square next to it.
 
      ![Project builder tool screenshot](assets/primary-class-example.png)
-   > **Note:** The tool allows you to create multiple primary classes. To do so, type another primary class name under **Primary classes** and click the green **plus(+)** button to add it to the list.
+   > **Note** that the tool allows you to create multiple primary classes. To do so, type another primary class name under **Primary classes** and click the green **plus(+)** button to add it to the list.
 
      To change the color of your primary classes, click the color picker square next to its name and choose a color. This is especially useful when you have multiple primary classes.
 
@@ -100,7 +100,7 @@ This step is particularly important for configuring a project for labeling. See 
 ### Step 5: Complete
 1.  If you want to have links to the labeling tool generated with a `&taskUrl=` parameter that will load the individual labeling task from the location you have hosted the files, click the checkbox next to **Include task file links in summary**. 
    
-    >  **Note:** This requires files to be hosted on a CORs enabled endpoint.
+    >  **Note** that this requires files to be hosted on a CORs enabled endpoint.
 
      See the [Output file format](#output-file-format) section for more details on the output of the project builder tool.
 

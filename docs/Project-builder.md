@@ -8,7 +8,7 @@ The project builder is the tool used by a project administrator to define a labe
 
 1. Open the [project builder tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/projectBuilder.html). Under the heading labeled **Step 1: Project details**, there are a series of fields for you to fill in. There are five different sections like this to complete.
    
-     > **Note:** If you have forked this project, your URL will be different.
+     > **Note** that if you have forked this project, your URL will be different.
 
 2. Choose one of the following: 
    - To open and edit an existing project that you have saved, click **Load existing project**, which appears above the **Step 1: Project details** heading.
@@ -16,7 +16,7 @@ The project builder is the tool used by a project administrator to define a labe
 ### Step 1: Project Details
 1. Under **Project Name**, type the name of your new project. When the user loads one of the generated task files in the labeler tool, the **Project Name** displays in the top left corner.
      
-     > **Note:** This field is required, so you are unable to move to the next step until a **Project Name** is specified.
+     > **Note** that this field is required, so you are unable to move to the next step until a **Project Name** is specified.
 
 2. Under **User instructions**, type the instructions that you want to display to the user when they use the labeling tool. This field is optional, but it is helpful to provide a short description of what the user should be capturing. A preview of your instructions appears under **Instructions preview**.
      
@@ -26,7 +26,7 @@ The project builder is the tool used by a project administrator to define a labe
    
 4. Click the checkbox next to **Allow OSM overpass wizard** if you want your users to be allowed to import data from Open Street Maps. This is optional, but it is useful when working with common spatial objects such as building footprints.
      
-     > **Note:** It is possible that the data may not align with the imagery. If unchecked, this feature is disabled. See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
+     > **Note** that it is possible that the data may not align with the imagery. If unchecked, this feature is disabled. See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
 
 5. Click the checkbox next to **Allow data import from custom service** if you want to add a custom service that can be used to import data within a bounding box and returns a GeoJSON feature collection. 
      
@@ -83,7 +83,7 @@ The project builder is the tool used by a project administrator to define a labe
    
 4. Click the green **plus(+)** button next to the primary class to officially add it. The class name is added to the list with a color picker square next to it.
    
-   > **Note:** The tool allows you to create multiple primary classes. To do so, type another primary class name under **Primary classes** and click the green **plus(+)** button to add it to the list.
+   > **Note** that the tool allows you to create multiple primary classes. To do so, type another primary class name under **Primary classes** and click the green **plus(+)** button to add it to the list.
 
      To change the color of your primary classes, click the color picker square next to its name and choose a color. This is especially useful when you have multiple primary classes.
 
@@ -95,7 +95,7 @@ The project builder is the tool used by a project administrator to define a labe
 ### Step 5: Complete
 1.  If you want to have links to the labeling tool generated with a `&taskUrl=` parameter that will load the individual labeling task from the location you have hosted the files, click the checkbox next to **Include task file links in summary**. 
    
-    >  **Note:** This requires files to be hosted on a CORs enabled endpoint.
+    >  **Note** that this requires files to be hosted on a CORs enabled endpoint.
 
      See the [Output file format](#output-file-format) section for more details on the output of the project builder tool.
 
@@ -103,7 +103,7 @@ The project builder is the tool used by a project administrator to define a labe
 3.  Share the task files or links to the labeling tool that will load their task file with the people who will be doing the labeling. See [Sharing task files](#sharing-task-files) section for more details.
 4.  Once the users have completed the labeling and sent you the results, add the output files to the **results** folder of the overall project folder. 
 5.  When you have collected all the results, zip the overall project folder and load it into the **project viewer** to view and merge all the results. See the [Project viewer documentation](Project-viewer.md) for more details.
-<br><br>
+
 ## Sharing task files
 
 Once the task files for your project have been created you will most likely want to assign/share them with the users who will be doing the labeling. 
@@ -114,7 +114,7 @@ For larger labeling jobs, it will likely be much easier to host the task files o
 > **Note** that the hosting location of the task files will need CORs and `https` enabled. See the next section for an example of one way to do this. 
  
  See [Output file format](#output-file-format) section for more details on the output of the project builder tool.
-<br><br>
+
 ## Hosting files in a CORs enabled Azure Blob storage
 
 > **WARNING:** The following steps will allow the files you load into this blob storage account to be **publicly accessible across domains**. If you have **sensitive data**, it is better to use local files or fork this project and modify it to work with your data in a secure manner.
@@ -129,7 +129,7 @@ Follow these steps to host files in a CORs enabled Azure blob storage:
 | Allowed origins | Allowed methods | Allowed headers | Exposed headers | Max age |
 |-----------------|-----------------|-----------------|-----------------|---------|
 | `*` | `GET` | `*` | `*` | `360000` |
-<br>
+
 ## Output file format
 
 The output of the project builder is a zip file with following structure:
@@ -164,7 +164,7 @@ The individual task files are GeoJSON files that each contain a feature collecti
 | `layers` | `{"[name]": {layeroptions}}` | An object where the key is the name of the layer. Each layer has a set of options as defined in Azure Maps.<br/><br/>· [ImageLayerOptions interface](https://docs.microsoft.com/javascript/api/azure-maps-control/atlas.imagelayeroptions?view=azure-maps-typescript-latest)<br/>· [TileLayerOptions interface](https://docs.microsoft.com/javascript/api/azure-maps-control/atlas.tilelayeroptions?view=azure-maps-typescript-latest)<br/>· [OgcMapLayerOptions interface](https://docs.microsoft.com/javascript/api/azure-maps-spatial-io/atlas.ogcmaplayeroptions?view=azure-maps-typescript-latest)<br/><br/>All options will be extended to include a "type" property that contains the class name of the layer: `ImageLayer`, `TileLayer`, `OgcMapLayer`. |
 | `primary_classes` | `{"property_name":  string,"names": string[],"colors": string[]}` | An object that contains: <br/>· The property name that the class is stored in <br/>· An array of class names <br/>· An array of colors <br/><br/>Names and colors are expected to be the same length, with name to color pairing having matching indices. |
 | `secondary_classes` | `{"property_name":  string,"names": string[]}` | An object that contains: <br/>· The property name the class is stored in <br/>· An array of class names |
-<br>
+
 ## Project admin settings
 
 If you fork this project, you can customize the default settings of the project. 

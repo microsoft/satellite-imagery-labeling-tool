@@ -22,7 +22,8 @@ The labeler tool is the primary tool that those who will be reviewing the imager
  <br><br>
 4. When finished, press the **Save** button on the left side panel.
 5. Select the desired output format. The default name and `GeoJSON` file format is often the best option, and will allow your project administrator to easily combine your data with a larger data set. 
-   > **Note:** Imported data may include a lot of additional metadata/properties on each shape. The `Minimize exported properties` option will remove these by default. 
+
+    > **Note** that imported data may include a lot of additional metadata/properties on each shape. The `Minimize exported properties` option will remove these by default. 
     
     See the [Result file format](#result-file-format) section for more details on the output data schema.
 
@@ -47,7 +48,7 @@ The administrator for your project may have specified a selection of imagery lay
 - If more than one layer is specified, you can use the **Layers** panel to switch between them. 
 - If there are too many layers in the layer panel, click on the **Layers** button in the left side panel. In there is the option to uncheck layers and have them not display in the layers selection panel. In this panel you also have the option to import custom layers if desired. See [Imagery layers](Layers.md) documentation for more information.
 
-### Adjusting the appearance of imagery on the map: 
+### Adjusting the appearance of imagery on the map 
 
 When you press the **Layers** button from the side menu, a panel appears with filter options that allow you to modify the **brightness**, **contrast**, **hue rotation**, and **saturation** of the imagery on the map. This can be very helpful in situations where it is difficult to distinguish the object you are looking for between other neighboring objects, such as vegetation.
 
@@ -62,7 +63,7 @@ If you have some existing data you want to import into the labeling tool, there 
   * The wizard is context aware and will only load in data that does not overlap with any data you have already drawn (your data has priority). 
   * The wizard may also be disabled if the project drawing is limited to rectangles.
 
->**_IMPORTANT:_** Open Street Map (OSM) data is great, but note that in imagery AI and machine learning scenarios it is important that the drawn features align with the imagery being used. Not all imagery is perfectly aligned and you may want to adjust the position of imported data from OSM. In the **Settings** panel you can enable shape dragging, then use the edit button in the drawing toolbar to select features and drag them around the map to align them with the selected imagery.
+>**_IMPORTANT:_** Open Street Map (OSM) data is great, but note that in imagery AI and machine learning scenarios, it is important that the drawn features align with the imagery being used. Not all imagery is perfectly aligned, so you may want to adjust the position of imported data from OSM. In the **Settings** panel you can enable shape dragging, then use the **edit** button in the drawing toolbar to select features and drag them around the map to align them with the selected imagery.
 
 <br>
 
@@ -85,13 +86,11 @@ The app will automatically save the drawn data on the map to a local storage in 
 
 All cached data will be **deleted after 30 days** by default (you can adjust this in the `labeler_settings.js` file under `autoSave -> ttl`). All data is stored within the end user's browser and is not sent to any servers for security and privacy.
 
-By default, the app will attempt to cache data using `indexedDB` which provides access to more than enough storage space. 
-* If `indexedDB` is disabled or unavailable in the browser, the app will fallback to the `localStorage` API which has a limit of 5MB of storage (roughly enough for 10K simple polygons like building footprints). 
+By default, the app will attempt to cache data using `indexedDB` which provides access to more than enough storage space. If `indexedDB` is disabled or unavailable in the browser, the app will fallback to the `localStorage` API which has a limit of 5MB of storage (roughly enough for 10K simple polygons like building footprints). 
 
-In most scenarios either of these storage solutions should be sufficient. It is possible that given a large area, and using the OSM importer feature, that more than 10K features would be on the map. 
-* If `indexedDB` and `localStorage` API's are not accessible in the browser (rare), this auto save feature will be disabled.
+In most scenarios either of these storage solutions should be sufficient. It is possible that given a large area, and using the OSM importer feature, that more than 10K features would be on the map. If `indexedDB` and `localStorage` API's are not accessible in the browser (rare), this auto save feature will be disabled.
 
-> **_NOTE:_** If your browser or browser tab is in private or incognito mode, the cached data **will be lost** when the tab is refreshed or the browser is closed.
+> **Note** that if your browser or browser tab is in private or incognito mode, the cached data **will be lost** when the tab is refreshed or the browser is closed.
 
 ## Settings
 
@@ -111,7 +110,7 @@ In addition to the administrator level settings that are used when a task is loa
 
 ## Take a screenshot
 
-If you want to take a screenshot of your progress, you can use the **Screenshot** tool. Here you can specify the **File name** and **Title** of the screenshot. There is also the option to include **stats** (such as the number of shapes) and **legend** (such as the classes and area of interest) in your screenshot.
+If you want to take a screenshot of your progress, you can use the **Screenshot** tool. Here you can specify the **File name** and **Title** of the screenshot. There is also the option to include the **stats** (such as the number of shapes) and **legend** (such as the classes and area of interest) of your project in your screenshot.
 
 ## Result file format
 
@@ -135,7 +134,7 @@ This source property will be a string with one of the following formats:
 
 If the filter option for class and source properties is not checked, all properties in the features will be exported, including any properties that existed on imported features.
 
-> **_NOTE:_** The administrator may override the `class` and `secondary_class` property names in the project builder tool. This will cause the output of the labeling tool to use the administrator specified property names.
+> **Note** that the administrator may override the `class` and `secondary_class` property names in the project builder tool. This will cause the output of the labeling tool to use the administrator specified property names.
 
 ## Power tools
 

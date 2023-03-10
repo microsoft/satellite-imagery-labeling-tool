@@ -11,7 +11,7 @@ The project viewer is the tool used by a project administrator to view and merge
 2. Zip the project builder folder.
    
 3. Open the [project viewer tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/projectViewer.html). 
-   > **Note:** If you have forked this project your URL will be different.
+   > **Note** that if you have forked this project, your URL will be different.
 
 4. Load your project into the viewer by using the **Load existing project** button in the left side panel. 
 

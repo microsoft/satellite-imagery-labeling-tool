@@ -19,7 +19,7 @@ TiTiler can then be run as a server process that listens on some port
 ```
 uvicorn --host 0.0.0.0 --port <PORT> titiler.application.main:app
 ```
-> **_Note:_** The machine that you run TiTiler on should have CORs enabled so it is accessible from elsewhere on the web).
+> **Note** that the machine that you run TiTiler on should have CORs enabled so it is accessible from elsewhere on the web.
 
 See other ways of deploying TiTiler on [Azure](https://developmentseed.org/titiler/deployment/azure/) or [AWS](https://developmentseed.org/titiler/deployment/aws/intro/).
 

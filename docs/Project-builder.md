@@ -134,7 +134,7 @@ Follow these steps to host files in a CORs enabled Azure blob storage:
 | Allowed origins | Allowed methods | Allowed headers | Exposed headers | Max age |
 |-----------------|-----------------|-----------------|-----------------|---------|
 | `*` | `GET` | `*` | `*` | `360000` |
-<br>
+
 ## Output file format
 
 The output of the project builder is a zip file with following structure:

@@ -68,16 +68,17 @@ The project builder is the tool used by a project administrator to define a labe
 
 4. Under **Grid size units**, adjust the units if necessary.
    
-5. Under **Grid size**, use the down and up arrows to adjust the size of the grid. This helps to  adjust the number of individual task areas that you want to create.
+5. Under **Grid size**, use the down and up arrows to adjust the size of the grid. This helps to  adjust the number of **individual task areas** that you want to create.
    
 6. Click **Next** to continue to **Step 4: Define classes**, where you define the class information that you want the users to assign to the features they draw.
 ### Step 4: Define classes
 This step is particularly important for configuring a project for labeling. See examples throughout this section on how to configure a project for **building segmentation and damage assessment labeling**.
-1. Under **Primary class display name**, type the name that you want to display for your primary class information.
+1. Under **Primary class display name**, type the name that you want to display for your primary class information. This may be the primary class name itself, but if you have multiple primary classes, the display name needs to be something broader.
    
 2. Under **Primary class property name**, type the property name that captures the primary class information in the labeling tool.
    
 3. Under **Primary classes**, type the name of the primary class.
+   > **For example**, when configuring a project for building segmentation and damage assessment, the primary classification might be **Building**.
    
 4. Click the green **plus(+)** button next to the primary class to officially add it. The class name is added to the list with a color picker square next to it.
 
@@ -90,7 +91,8 @@ This step is particularly important for configuring a project for labeling. See 
      
      ![Project builder tool screenshot](assets/secondary-class-example.png)
 
-6. If you choose to capture a secondary class, customize the display name, property name, and add names in a similar manner as the primary class.   
+6. If you choose to capture a secondary class, customize the display name, property name, and add class names in a similar manner as the primary class. 
+   > **For example**, when configuring a project for building segmentation and damage assessment, the secondary classification might be **damage severity**, with the classes for labeling being **0, 1, 2, 3, 4, and 5** as  measurement for damage severity.
 
    ![Project builder tool screenshot](assets/damage-severity-example.png)
 

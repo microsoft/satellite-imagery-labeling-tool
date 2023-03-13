@@ -6,21 +6,17 @@ The labeler tool is the primary tool that those who will be reviewing the imager
 
 ## Labeler quickstart
 
-1. Open the [labeling tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/labeler.html). 
-   
-   > **Note** that your project adminstrator may have provided an link that will open up your specific task or may point to a forked version of this tool.
+1. Open the [labeling tool](https://microsoft.github.io/satellite-imagery-labeling-tool/src/labeler.html). Your project adminstrator may have provided a link that will open up your specific task or point to a forked version of this tool.
 
-2. Load a labeling project task file (Optional) 
+2. Load a labeling project task file (Optional). Once loaded, the map zooms into the assigned area and displays a yellow dashed outline of the area you are expected to label. Instructions from the project administrator may appear and provide some guidance on what data to capture. 
    - If the URL to the labeler contains something like `?taskUrl=[some text]` the labeler will automatically attempt to load in the project task file. 
    - If you have a task file locally, you can open it by going to `Import data -> Local task file` and selecting the local task file. 
 
-    <br>Once loaded the map will zoom into the assigned area and display a yellow dashed outline of the area you are expected to label the imagery within. Instructions from the project administrator may appear and provide some guidance on what data to capture.
-
 3. Use the drawing tools in the top right corner to draw features on the map. 
-   - Be sure to select the classification of the data using the panel below the drawing tools. 
-   - See [Drawing tools documentation](https://learn.microsoft.com/azure/azure-maps/drawing-tools-interactions-keyboard-shortcuts) for details on all the different ways to draw features on the map.
- <br><br>
+    > Be sure to select the classification of the data using the panel below the drawing tools. See [Drawing tools documentation](https://learn.microsoft.com/azure/azure-maps/drawing-tools-interactions-keyboard-shortcuts) for details on all the different ways to draw features on the map.
+
 4. When finished, press the **Save** button on the left side panel.
+   
 5. Select the desired output format. The default name and `GeoJSON` file format is often the best option, and will allow your project administrator to easily combine your data with a larger data set. 
 
     > **Note** that imported data may include a lot of additional metadata/properties on each shape. The `Minimize exported properties` option will remove these by default. 

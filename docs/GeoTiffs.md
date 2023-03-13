@@ -1,6 +1,6 @@
 # Using GeoTIFFs as layers
 
-GeoTIFF files are a common way of sharing georeferenced aerial and satellite imagery. These files tend to be hundreds of megabytes, if not gigabytes in size. As such, directly loading them into a web based map app will rarely be an option. Instead, this imagery will need to be hosted on a server and exposed in an easily consumable way, such as a tile layer.
+GeoTIFF files are a common way of sharing georeferenced aerial and satellite imagery. These files tend to be hundreds of megabytes, if not gigabytes in size. As such, directly loading them into a web based map app is rarely an option. Instead, this imagery needs to be hosted on a server and exposed in an easily consumable way, such as a tile layer.
 
 If you have satellite/aerial imagery stored in a cloud optimized GeoTIFF format on the web (e.g. in a Azure blob storage container or S3 bucket) you can use [TiTiler](https://developmentseed.org/titiler/) to render it on-the-fly and use it seamlessly with this tool.
 
@@ -14,7 +14,7 @@ pip install uvicorn
 pip install titiler.{package}
 ```
 
-TiTiler can then be run as a server process that listens on some port 
+TiTiler can then be run as a server process that listens on some port: 
 
 ```
 uvicorn --host 0.0.0.0 --port <PORT> titiler.application.main:app

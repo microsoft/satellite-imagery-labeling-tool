@@ -6,3 +6,4 @@ Welcome to the Spatial labeling tool documentation. The following will help guid
 - [Labeler documentation](Labeler.md) - Details on how to use the labeler tool.
 - [Project viewer documentation](Project-viewer.md) - Details on how to use the project view tool.
 - [Working with GeoTiffs](GeoTiffs.md) - Details on how to use custom GeoTiffs as reference layers in the project builder and labeler tools. 
+- [Imagery layers](Layers.md) - Details on how to import different types of imagery layers into this tool.

@@ -13,7 +13,7 @@ Imagery is the primary resource needed in this application. There are many ways 
 The following sections show you how to import the different types of layers. To jump to a specific type of layer, click one of the following:
 
 - [Imagery layers](#imagery-layers)
-  - [Use Azure Maps for Enhanced Functionality](#use-azure-maps-for-enhanced-functionality)
+  - [Use Azure Maps for enhanced functionality](#use-azure-maps-for-enhanced-functionality)
   - [Import external imagery layers](#import-external-imagery-layers)
     - [Add a tile layer](#add-a-tile-layer)
     - [Bulk load TileJSON](#bulk-load-tilejson)
@@ -23,7 +23,7 @@ The following sections show you how to import the different types of layers. To 
     - [Import KML / KMZ Ground overlays](#import-kml--kmz-ground-overlays)
     - [Connect to a WMS or WMTS service](#connect-to-a-wms-or-wmts-service)
 
-## Use Azure Maps for Enhanced Functionality
+## Use Azure Maps for enhanced functionality
 
 When valid Azure Maps authentication information is specified in the `src -> settings -> map_settings.js` file, the Azure Maps satellite imagery will be the default basemap and provides high resolution global satellite and aerial imagery. This will also provide the ability to show labels (place and road names), borders, and point of interest data above all reference layers. A search bar is also provided that can be used to quickly search for a location (geocode).
 

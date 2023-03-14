@@ -110,7 +110,7 @@ This step is particularly important for configuring a project for labeling. See 
 3.  Share the task files or links to the labeling tool that will load their task file with the people who will be doing the labeling. See [Sharing task files](#sharing-task-files) section for more details.
 4.  Once the users have completed the labeling and sent you the results, add the output files to the **results** folder of the overall project folder. 
 5.  When you have collected all the results, zip the overall project folder and load it into the **project viewer** to view and merge all the results. See the [Project viewer documentation](Project-viewer.md) for more details.
-<br><br>
+
 ## Sharing task files
 
 Once the task files for your project have been created you will most likely want to assign/share them with the users who will be doing the labeling. 
@@ -121,7 +121,7 @@ For larger labeling jobs, it will likely be much easier to host the task files o
 > **Note** that the hosting location of the task files will need CORs and `https` enabled. See the next section for an example of one way to do this. 
  
  See [Output file format](#output-file-format) section for more details on the output of the project builder tool.
-<br><br>
+
 ## Hosting files in a CORs enabled Azure Blob storage
 
 > **WARNING:** The following steps will allow the files you load into this blob storage account to be **publicly accessible across domains**. If you have **sensitive data**, it is better to use local files or fork this project and modify it to work with your data in a secure manner.

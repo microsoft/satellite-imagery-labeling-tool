@@ -104,6 +104,11 @@ export class LabelerApp {
 
 	#checkSettings = ['fill_polygons', 'continuousDrawing', 'continuousDelete', 'snapGridEnabled', 'shapeDragEnabled', 'shapeRotateEnabled'];
 
+	#shapePasteMode = 'Map center';
+	#lastEdittedShape;
+	#copiedShape;
+	#mousePosition;
+
 	///////////////////////////
 	// Constructor
 	//////////////////////////
@@ -663,7 +668,7 @@ export class LabelerApp {
 	#initSettingsPanel() {
 		const self = this;
 
-		const elms = Utils.getElementsByIds(['continuousDrawing', 'continuousDelete', 'fill_polygons', 'snapGridEnabled', 'shapeDragEnabled', 'shapeRotateEnabled', 'drawingModeSelector', 'clearCacheBtn']);
+		const elms = Utils.getElementsByIds(['continuousDrawing', 'continuousDelete', 'fill_polygons', 'snapGridEnabled', 'shapeDragEnabled', 'shapeRotateEnabled', 'drawingModeSelector', 'clearCacheBtn', 'shapePasteMode']);
 
 		elms.continuousDrawing.onchange = (e) => {
 			self.config.properties.continuousDrawing = elms.continuousDrawing.checked;
@@ -717,6 +722,12 @@ export class LabelerApp {
 			if (dm) {
 				dm.setOptions({ interactionType: Utils.getSelectValue(elms.drawingModeSelector, 'innerText') });
 			}
+
+			self.#saveSettings();
+		};
+
+		elms.shapePasteMode.onchange = () => {
+			self.#shapePasteMode = Utils.getSelectValue(elms.shapePasteMode, 'innerText');
 
 			self.#saveSettings();
 		};
@@ -817,6 +828,20 @@ export class LabelerApp {
 		});
 		self.#drawingManager = dm;
 
+		//Monitor for when drawing has started.
+		map.events.add('drawingstarted', dm, (shape) => {
+			if(dm.getOptions().mode === 'edit-geometry') {
+				//Store a copy of the last editted shape.
+				const shapeCopy = shape.toJson();
+								
+				//Delete ids to prevent issues.
+				delete shapeCopy.id;
+				delete shapeCopy.properties._azureMapsShapeId;
+
+				self.#lastEdittedShape = shapeCopy;
+			}
+		});
+
 		//Monitor for when drawing has been completed.
 		map.events.add('drawingcomplete', dm, (e) => {
 			self.#drawingComplete(e);
@@ -830,6 +855,26 @@ export class LabelerApp {
 			}
 
 			self.#popup.close();
+		});
+
+		//Add copy/paste handling
+		map.getMapContainer().addEventListener('keyup', (e) => {
+			//Check to see if the control button is held.
+			if(e.ctrlKey) {
+				//Check to see if user pressed C to copy.
+				if(e.keyCode === 67) {
+					//Ensure that the drawing manager is in edit mode and a shape has been selected.
+					if(dm.getOptions().mode === 'edit-geometry' && self.#lastEdittedShape) {
+						//Copy the selected shape.
+						self.#copiedShape = self.#lastEdittedShape;							
+					}
+				} 
+				
+				//Check to see if user pressed V to paste and if their is a copied shape in memory.
+				else if (e.keyCode === 86 && self.#copiedShape){
+					self.#pasteShape();
+				}
+			}
 		});
 
 		//Get layers from the drawing manager and modify line styles.
@@ -881,6 +926,8 @@ export class LabelerApp {
 
 		//Add hover effect on mouse move.
 		map.events.add('mousemove', (e) => {
+			self.#mousePosition = e.position;
+
 			//Remove previous hover state.
 			map.map.removeFeatureState({ source: featureSource.getId() });
 
@@ -898,6 +945,8 @@ export class LabelerApp {
 				}
 			}
 		});
+
+		map.events.add('mouseout', () => { self.#mousePosition = null });
 
 		//Create a layer for visualizing the area of interest on the map.		
 		map.sources.add(self.#aoiSource);
@@ -1542,6 +1591,9 @@ export class LabelerApp {
 		//self.#featureSource.add(shape);
 		self.#replaceShape(shape);
 
+		//Stop tracking the last editted shape.
+		self.#lastEdittedShape = null;
+
 		self.#saveSession();
 	}
 
@@ -1848,6 +1900,7 @@ export class LabelerApp {
 
 		localStorage.setItem('drawingMode', Utils.getSelectValue(document.getElementById('drawingModeSelector'), 'innerText'));
 		localStorage.setItem('app-theme', Utils.getSelectValue(document.getElementById('app-theme'), 'innerText'));
+		localStorage.setItem('shapePasteMode', Utils.getSelectValue(document.getElementById('shapePasteMode'), 'innerText'));
 	}
 
 	/** Loads user prefernce settings from previous session. */
@@ -1865,7 +1918,8 @@ export class LabelerApp {
 		//Set dropdown settings.
 		elms.push(Utils.setSelectByValue('drawingModeSelector', localStorage.getItem('drawingMode'), 'innerText'));
 		elms.push(Utils.setSelectByValue('app-theme', localStorage.getItem('app-theme'), 'innerText'));
-
+		elms.push(Utils.setSelectByValue('shapePasteMode', localStorage.getItem('shapePasteMode'), 'innerText'));
+		
 		//Trigger the onchange events of each setting.
 		elms.forEach(e => {
 			e.onchange();
@@ -1919,5 +1973,93 @@ export class LabelerApp {
 			}
 		};
 		document.body.appendChild(l);
+	}
+
+	#pasteShape() {
+		const self = this;
+			
+		if(self.#copiedShape) {
+			let dx = 0;
+			let dy = 0;
+
+			if(self.#shapePasteMode !== 'No offset') {
+				//Calculate the center point of the copied shape based on bounding box for simplicity. 
+				const copiedCenter = atlas.data.BoundingBox.getCenter(atlas.data.BoundingBox.fromData(self.#copiedShape));
+			
+				//Paste the shape to where the mouse is over the map, or the center of the map.
+				let pasteCenter = self.map.getCamera().center;
+
+				if(self.#shapePasteMode === 'Mouse pointer' && self.#mousePosition) {
+					pasteCenter = self.#mousePosition;
+				}
+
+				//Calculate the offsets. Use pixels at zoom level 22 for visible accuracy.
+				const p = atlas.math.mercatorPositionsToPixels([copiedCenter, pasteCenter], 22);
+				dx = p[1][0] - p[0][0];
+				dy = p[1][1] - p[0][1];
+			}
+			
+			const shapeToPaste = self.#createShapeToPaste(dx, dy);
+			
+			const ds = self.#drawingManager.getSource();
+			ds.add(shapeToPaste);
+			
+			//Get the last shape added to the data source and put it into edit mode.
+			const shapes = ds.getShapes();
+			const s = shapes[shapes.length - 1];
+			self.#drawingManager.edit(s);
+
+			//Save the session.
+			self.#saveSession();
+		}
+	}
+	
+	#createShapeToPaste(dx, dy) {
+		const self = this;
+		const g = self.#copiedShape.geometry;
+	
+		const newGeometry = {
+			type: g.type,
+			coordinates: [] 
+		};
+
+		if(dx === 0 && dy === 0) {
+			newGeometry.coordinates = JSON.parse(JSON.stringify(g.coordinates));
+		} else {
+			//Offset the positions of the geometry.
+			switch(g.type) {
+				case 'Point':
+					newGeometry.coordinates = self.#getOffsetPositions([g.coordinates], dx, dy)[0];
+					break;
+				case 'LineString':
+				case 'MultiPoint':					
+					newGeometry.coordinates = self.#getOffsetPositions(g.coordinates, dx, dy);
+					break;
+				case 'Polygon':
+				case 'MultiLineString':					
+					newGeometry.coordinates = g.coordinates.map(r => {
+						return self.#getOffsetPositions(r, dx, dy);
+					});
+					break;
+				//MultiPolygon
+			}
+		}
+		
+		//Create a GeoJSON featuret from new geometry, copy the properties. 
+		return new atlas.data.Feature(newGeometry, JSON.parse(JSON.stringify(self.#copiedShape.properties)));		
+	}
+	
+	#getOffsetPositions(positions, dx, dy) {
+		//Convert positions to pixel at zoom level 22.
+		const pixels = atlas.math.mercatorPositionsToPixels(positions, 22);
+		
+		//Offset pixels.
+		for(let i=0, len = pixels.length; i< len;i++) {
+			pixels[i][0] += dx;
+			pixels[i][1] += dy;
+		}			
+		
+		//Convert back to positions.
+		return atlas.math.mercatorPixelsToPositions(pixels, 22);
 	}
 }

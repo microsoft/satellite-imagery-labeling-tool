@@ -543,13 +543,14 @@ export class AnnotationClassControl extends SimpleEventerClass {
 				const test = (self.#currentSecondary === secondary.names[i]);
 				hasMatch |= test;
 				const l = self.#createClassElm(secondary.names[i], null, self.#secondaryContainer, test, self.#secondaryGroupName);
-				l.onclicked = () => {
+				l.onclick = () => {
 					self.#currentSecondary = l.querySelector('span').innerText;
+					const opt = self.#bulkEditMode;
 					if(opt){
 						opt.classType = 'secondary';
 						opt.value[secondary.property_name] = self.#currentSecondary;
 					}
-				};
+				}
 			}
 
 			//Ensure an inital class is selected.

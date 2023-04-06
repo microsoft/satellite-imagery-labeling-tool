@@ -1,6 +1,6 @@
 # Using GeoTIFFs as layers
 
-GeoTIFF files are a common way of sharing georeferenced aerial and satellite imagery. These files tend to be hundreds of megabytes, if not gigabytes in size. As such, directly loading them into a web based map app will rarely be an option. Instead, this imagery will need to be hosted on a server and exposed in an easily consumable way, such as a tile layer.
+GeoTIFF files are a common way of sharing georeferenced aerial and satellite imagery. These files tend to be hundreds of megabytes, if not gigabytes in size. As such, directly loading them into a web based map app is rarely an option. Instead, this imagery needs to be hosted on a server and exposed in an easily consumable way, such as a tile layer.
 
 If you have satellite/aerial imagery stored in a cloud optimized GeoTIFF format on the web (e.g. in a Azure blob storage container or S3 bucket) you can use [TiTiler](https://developmentseed.org/titiler/) to render it on-the-fly and use it seamlessly with this tool.
 
@@ -14,11 +14,12 @@ pip install uvicorn
 pip install titiler.{package}
 ```
 
-TiTiler can then be run as a server process that listens on some port (**note**, the machine that you run TiTiler on should have CORs enabled so it is accessible from elsewhere on the web).
+TiTiler can then be run as a server process that listens on some port: 
 
 ```
 uvicorn --host 0.0.0.0 --port <PORT> titiler.application.main:app
 ```
+> **Note** that the machine that you run TiTiler on should have CORs enabled so it is accessible from elsewhere on the web.
 
 See other ways of deploying TiTiler on [Azure](https://developmentseed.org/titiler/deployment/azure/) or [AWS](https://developmentseed.org/titiler/deployment/aws/intro/).
 
@@ -40,7 +41,9 @@ If a TileJSON URL is provided as the `Service URL`, the following settings can b
 - `Bounds` - The bounding box of where the GeoTIff imagery is available. For example; north = 28.064522, south = 27.997976, east = -80.560208, west = -80.627296
 - `Tile size` - 256 is the most likely value unless you specifically changed the size when creating the tiles.
 
-Alternatively, manually add this to the `layers` section of a task file or the labeler tool settings (`labeler_settings.js`). For example:
+Alternatively, manually add this to the `layers` section of a task file or the labeler tool settings (`labeler_settings.js`). 
+
+For example:
 
 ```js
 "layers": {

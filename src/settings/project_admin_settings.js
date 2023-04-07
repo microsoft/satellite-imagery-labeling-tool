@@ -79,8 +79,8 @@
 	/**
 	 * Help information on how to use the project builder. Markdown supported.
 	 */
-	helpBuilderContent: 'This tool helps you define a spatial annonation project by letting you do the following:\n\n- Provide project specific instructions for the users (guidance on what you want the end users to annotate).\n- Define an area of interest, break it up into smaller task areas (grid cells).\n- Load and select imagery layers to be used for labeling (annotation).\n- Tweak the settings used by the labeler tool.\n\n[See the full documentation](https://github.com/microsoft/satellite-imagery-labeling-tool/docs/Project-builder.md)',
+	helpBuilderContent: 'This tool helps you define a spatial annonation project by letting you do the following:\n\n- Provide project specific instructions for the users (guidance on what you want the end users to annotate).\n- Define an area of interest, break it up into smaller task areas (grid cells).\n- Load and select imagery layers to be used for labeling (annotation).\n- Tweak the settings used by the labeler tool.\n\n[See the full documentation](https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Project-builder.md)',
 
 	/**  Help information on how to use the project viewer. Markdown supported. */
-	helpViewerContent: 'This tool helps you manage a spatial annonation project by letting you do the following:\n\n- Load and view a project.\n- View the results for all task areas and easily see which ones are complete.\n- Calculate stats.\n- Merge the results from all task areas into a single output file.\n\n[See the full documentation](https://github.com/microsoft/satellite-imagery-labeling-tool/docs/Project-viewer.md)'
+	helpViewerContent: 'This tool helps you manage a spatial annonation project by letting you do the following:\n\n- Load and view a project.\n- View the results for all task areas and easily see which ones are complete.\n- Calculate stats.\n- Merge the results from all task areas into a single output file.\n\n[See the full documentation](https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Project-viewer.md)'
  };

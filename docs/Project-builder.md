@@ -28,6 +28,7 @@ The project builder is the tool used by a project administrator to define a labe
      > **Note** that it is possible that the data may not align with the imagery. If unchecked, this feature is disabled. See the [Import existing data](Labeler.md#import-existing-data) section of the labeler instructions for more details.
 
 5. Click the checkbox next to **Allow data import from custom service** if you want to add a custom service that can be used to import data within a bounding box and returns a GeoJSON feature collection. 
+     
      > **Important:** The service must be hosted on a CORs enabled endpoint. 
   
      Upon checking the **Allow data import from custom service** box, two more fields appear labeled **Button name** and **Data service**:
@@ -35,6 +36,7 @@ The project builder is the tool used by a project administrator to define a labe
    - Under **Data service**, type the URL to the data service with a placeholder "{bbox}" that takes in bounding box coordinates in the format "minLon,minLat,maxLon,maxLat".
      
      > **Important:** This must return a GeoJSON feature service. This could be a custom service, or an [OGC API Feature service (WFS 3.0)](https://github.com/opengeospatial/ogcapi-features).
+
 6. Click the field under **Allowed drawing type(s)** to specify what type of features the user can draw. A drop-down menu appears and the following options are available:
    - **Polygons** - polygons, rectangles, and circles
    - **Rectangles** only

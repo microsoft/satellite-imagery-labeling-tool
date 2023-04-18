@@ -2,9 +2,9 @@
  * Settings used by the map in all apps.
  */
 export let mapSettings = {
-    //Optional. Azure Maps authentication information.
+	//Optional. Azure Maps authentication information.
 	azureMapsAuth: {
-		
+
 		//Option 1: Use Azure Active Directory authentication for secure access to Azure Maps.
 		authType: "anonymous",
 		clientId: "d069e722-70c3-4dd6-8532-a6f4b18c9bfb", //Your Azure Maps client id for accessing your Azure Maps account.
@@ -20,6 +20,6 @@ export let mapSettings = {
 		subscriptionKey: "<Your Azure Maps Key>"*/
 	},
 
-    //A URL to a CORs enabled proxy service that can be leveraged for cross domain requests. Cross domain URL would be appended to this proxy service URL. 
-    proxyService: undefined
+	//A URL to a CORs enabled proxy service that can be leveraged for cross domain requests. Cross domain URL would be appended to this proxy service URL. 
+	proxyService: undefined
 };

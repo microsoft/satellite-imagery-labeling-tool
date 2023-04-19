@@ -2,7 +2,7 @@
  * Settings used by the map in all apps.
  */
 export let mapSettings = {
-    //Optional. Azure Maps authentication information.
+	//Optional. Azure Maps authentication information.
 	azureMapsAuth: {
 
 		// TODO: This tokenServiceUrl appears to be broken/down

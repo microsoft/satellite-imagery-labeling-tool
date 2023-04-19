@@ -1,10 +1,10 @@
-import { appSettings } from '../settings/labeler_settings.js'
-import { mapSettings } from '../settings/map_settings.js'
+import { appSettings } from '../settings/labeler_settings.js';
+import { mapSettings } from '../settings/map_settings.js';
 
-import { Navbar, Flyout } from './controls/layoutControls.js'
-import { Utils } from './utils.js';
-import { SimpleLayerControl, SearchBarControl, AnnotationClassControl, SimpleContentControl } from './controls/customMapControls.js';
+import { AnnotationClassControl, SearchBarControl, SimpleContentControl, SimpleLayerControl } from './controls/customMapControls.js';
 import { AddLayerDialog } from './controls/dialogs.js';
+import { Flyout, Navbar } from './controls/layoutControls.js';
+import { Utils } from './utils.js';
 
 /** The main logic for the spatial annotation labeler app. */
 export class LabelerApp {
@@ -378,6 +378,65 @@ export class LabelerApp {
 				cancelImportBtn.focus();
 			}
 		};
+
+		// Azure Blob Storage Import
+		// Replace them with your own Azure Blob Storage account information
+		// TODO: Import these values from the config file
+		const azureAccountName = "your_account_name";
+		const azureContainerName = "your_container_name";
+		const sasToken = "your_sas_token";
+
+		// Add this function to your existing JavaScript code
+		async function loadAzureFile(fileType) {
+			const fileName = prompt("Enter the file name from Azure Blob Storage:");
+
+			if (fileName) {
+				const blobUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainerName}/${fileName}${sasToken}`;
+				const response = await fetch(blobUrl);
+				const data = await response.text();
+
+				if (fileType === "task") {
+					try {
+						let fc = JSON.parse(data);
+						if (fc && fc.type === 'FeatureCollection' && fc.features && fc.features.length > 0) {
+							const defaultProps = Object.assign({}, appSettings.defaultConfig.features[0].properties);
+							fc.features[0].properties = Object.assign(defaultProps, fc.features[0].properties);
+							self.config = fc.features[0];
+
+							self.#loadConfig();
+						}
+					} catch (e) {
+						alert('Unable to load task file.');
+					}
+				} else if (fileType === "data") {
+					try {
+						const features = [];
+						const lines = data.split('\n');
+						for (let i = 0, len = lines.length; i < len; i++) {
+							try {
+								features.push(JSON.parse(lines[i]));
+							} catch { }
+						}
+
+						self.#importFeatures(features, { source: `AzureBlobStorage|${fileName}` }, true, true);
+					} catch (e) {
+						alert('Unable to load data file.');
+					}
+				}
+			}
+		}
+
+		// Add these event listeners inside the initLoadPanel function
+		document.getElementById("loadAzureTask").addEventListener("click", () => {
+			self.#popup.close();
+			loadAzureFile("task");
+		});
+
+		document.getElementById("loadAzureData").addEventListener("click", () => {
+			self.#popup.close();
+			loadAzureFile("data");
+		});
+
 	}
 
 	/*
@@ -830,10 +889,10 @@ export class LabelerApp {
 
 		//Monitor for when drawing has started.
 		map.events.add('drawingstarted', dm, (shape) => {
-			if(dm.getOptions().mode === 'edit-geometry') {
+			if (dm.getOptions().mode === 'edit-geometry') {
 				//Store a copy of the last editted shape.
 				const shapeCopy = shape.toJson();
-								
+
 				//Delete ids to prevent issues.
 				delete shapeCopy.id;
 				delete shapeCopy.properties._azureMapsShapeId;
@@ -860,18 +919,18 @@ export class LabelerApp {
 		//Add copy/paste handling
 		map.getMapContainer().addEventListener('keyup', (e) => {
 			//Check to see if the control button is held.
-			if(e.ctrlKey) {
+			if (e.ctrlKey) {
 				//Check to see if user pressed C to copy.
-				if(e.keyCode === 67) {
+				if (e.keyCode === 67) {
 					//Ensure that the drawing manager is in edit mode and a shape has been selected.
-					if(dm.getOptions().mode === 'edit-geometry' && self.#lastEdittedShape) {
+					if (dm.getOptions().mode === 'edit-geometry' && self.#lastEdittedShape) {
 						//Copy the selected shape.
-						self.#copiedShape = self.#lastEdittedShape;							
+						self.#copiedShape = self.#lastEdittedShape;
 					}
-				} 
-				
+				}
+
 				//Check to see if user pressed V to paste and if their is a copied shape in memory.
-				else if (e.keyCode === 86 && self.#copiedShape){
+				else if (e.keyCode === 86 && self.#copiedShape) {
 					self.#pasteShape();
 				}
 			}
@@ -1089,7 +1148,7 @@ export class LabelerApp {
 			const mode = dm.getOptions().mode;
 
 			if (mode === 'edit-geometry') {
-				if(!dm.getSource().getShapeById(shape.getId())){
+				if (!dm.getSource().getShapeById(shape.getId())) {
 					//Idle drawing manager.
 					self.#idleDrawing();
 
@@ -1146,8 +1205,8 @@ export class LabelerApp {
 	#forceRemoveShape(id) {
 		const self = this;
 		const shapes = self.#featureSource.toJson();
-		for(let i=shapes.features.length - 1;i >= 0;i--){
-			if(shapes.features[i].id === id){
+		for (let i = shapes.features.length - 1; i >= 0; i--) {
+			if (shapes.features[i].id === id) {
 				shapes.features.splice(i, 1);
 			}
 		}
@@ -1163,8 +1222,8 @@ export class LabelerApp {
 		const self = this;
 		const id = shape.getId();
 		const shapes = self.#featureSource.toJson();
-		for(let i=shapes.features.length - 1;i >= 0;i--){
-			if(shapes.features[i].id === id){
+		for (let i = shapes.features.length - 1; i >= 0; i--) {
+			if (shapes.features[i].id === id) {
 				shapes.features.splice(i, 1);
 			}
 		}
@@ -1919,7 +1978,7 @@ export class LabelerApp {
 		elms.push(Utils.setSelectByValue('drawingModeSelector', localStorage.getItem('drawingMode'), 'innerText'));
 		elms.push(Utils.setSelectByValue('app-theme', localStorage.getItem('app-theme'), 'innerText'));
 		elms.push(Utils.setSelectByValue('shapePasteMode', localStorage.getItem('shapePasteMode'), 'innerText'));
-		
+
 		//Trigger the onchange events of each setting.
 		elms.forEach(e => {
 			e.onchange();
@@ -1977,19 +2036,19 @@ export class LabelerApp {
 
 	#pasteShape() {
 		const self = this;
-			
-		if(self.#copiedShape) {
+
+		if (self.#copiedShape) {
 			let dx = 0;
 			let dy = 0;
 
-			if(self.#shapePasteMode !== 'No offset') {
+			if (self.#shapePasteMode !== 'No offset') {
 				//Calculate the center point of the copied shape based on bounding box for simplicity. 
 				const copiedCenter = atlas.data.BoundingBox.getCenter(atlas.data.BoundingBox.fromData(self.#copiedShape));
-			
+
 				//Paste the shape to where the mouse is over the map, or the center of the map.
 				let pasteCenter = self.map.getCamera().center;
 
-				if(self.#shapePasteMode === 'Mouse pointer' && self.#mousePosition) {
+				if (self.#shapePasteMode === 'Mouse pointer' && self.#mousePosition) {
 					pasteCenter = self.#mousePosition;
 				}
 
@@ -1998,12 +2057,12 @@ export class LabelerApp {
 				dx = p[1][0] - p[0][0];
 				dy = p[1][1] - p[0][1];
 			}
-			
+
 			const shapeToPaste = self.#createShapeToPaste(dx, dy);
-			
+
 			const ds = self.#drawingManager.getSource();
 			ds.add(shapeToPaste);
-			
+
 			//Get the last shape added to the data source and put it into edit mode.
 			const shapes = ds.getShapes();
 			const s = shapes[shapes.length - 1];
@@ -2013,30 +2072,30 @@ export class LabelerApp {
 			self.#saveSession();
 		}
 	}
-	
+
 	#createShapeToPaste(dx, dy) {
 		const self = this;
 		const g = self.#copiedShape.geometry;
-	
+
 		const newGeometry = {
 			type: g.type,
-			coordinates: [] 
+			coordinates: []
 		};
 
-		if(dx === 0 && dy === 0) {
+		if (dx === 0 && dy === 0) {
 			newGeometry.coordinates = JSON.parse(JSON.stringify(g.coordinates));
 		} else {
 			//Offset the positions of the geometry.
-			switch(g.type) {
+			switch (g.type) {
 				case 'Point':
 					newGeometry.coordinates = self.#getOffsetPositions([g.coordinates], dx, dy)[0];
 					break;
 				case 'LineString':
-				case 'MultiPoint':					
+				case 'MultiPoint':
 					newGeometry.coordinates = self.#getOffsetPositions(g.coordinates, dx, dy);
 					break;
 				case 'Polygon':
-				case 'MultiLineString':					
+				case 'MultiLineString':
 					newGeometry.coordinates = g.coordinates.map(r => {
 						return self.#getOffsetPositions(r, dx, dy);
 					});
@@ -2044,21 +2103,21 @@ export class LabelerApp {
 				//MultiPolygon
 			}
 		}
-		
+
 		//Create a GeoJSON featuret from new geometry, copy the properties. 
-		return new atlas.data.Feature(newGeometry, JSON.parse(JSON.stringify(self.#copiedShape.properties)));		
+		return new atlas.data.Feature(newGeometry, JSON.parse(JSON.stringify(self.#copiedShape.properties)));
 	}
-	
+
 	#getOffsetPositions(positions, dx, dy) {
 		//Convert positions to pixel at zoom level 22.
 		const pixels = atlas.math.mercatorPositionsToPixels(positions, 22);
-		
+
 		//Offset pixels.
-		for(let i=0, len = pixels.length; i< len;i++) {
+		for (let i = 0, len = pixels.length; i < len; i++) {
 			pixels[i][0] += dx;
 			pixels[i][1] += dy;
-		}			
-		
+		}
+
 		//Convert back to positions.
 		return atlas.math.mercatorPixelsToPositions(pixels, 22);
 	}

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="shortcut icon" href="assets/earth.ico"/>
+
+	<title>Spatial imagery labeler toolkit</title>
+
+	<!-- Add fonts CSS files. -->
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&v=1656088853827">
+
+	<!-- Add App CSS files. -->
+	<link rel="stylesheet" href="css/themes/indigo.css"/>
+	<link rel="stylesheet" href="css/layout.css"/>
+
+    <style>
+        body {
+            font-size: 14px;;
+        }
+
+        .panel {
+            position: relative;
+            width: calc(50% - 20px);
+            min-width: 300px;
+            margin: 10px;
+            float: left;
+        }
+
+        h2, ul {
+            margin-left: 20%;
+        }
+    </style>
+</head>
+<body>
+	<header>
+		<h1 id="appTitle">Spatial imagery labeling toolkit</h1>
+	</header>
+
+	<div class="main w3-row">
+        <div class="panel">
+            <p>
+                Welcome to the Spatial imagery toolkit.
+                This is an open source lightweight web-interface for creating and sharing vector annotations (lines or polygons) over satellite/aerial imagery scenes.
+                <br/><br/>
+                <a href="https://github.com/microsoft/satellite-imagery-labeling-tool/">Open in Github</a>
+            </p>
+            <h2>Administrative tools</h2>
+            <ul>
+                <li><a href="./projectBuilder.html" target="_blank">Project builder</a></li>
+                <li><a href="./projectViewer.html" target="_blank">Project viewer</a></li>
+                <li><a href="" target="_blank">Spatial imagery ML Jupyter notebook example</a></li>
+            </ul>
+
+            <h2>End user tools</h2>
+            <ul>
+                <li><a href="./labeler.html" target="_blank">Labeler</a></li>
+            </ul>
+
+            <h2>Documentation</h2>
+                <ul>
+                    <li><a href="https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Labeler.md" target="_blank">Labeler tool</a></li>
+                    <li><a href="https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Project-builder.md" target="_blank">Project builder</a></li>
+                    <li><a href="https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Project-viewer.md" target="_blank">Project viewer</a></li>
+                    <li><a href="https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Layers.md" target="_blank">Imagery layers</a></li>
+                    <li><a href="https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/GeoTiffs.md" target="_blank">Using GeoTIFFs as layers</a></li>
+                </ul>
+        </div>
+
+        <img src="../docs/assets/Labaler.png" class="panel" alt="Screenshot of the spatial imagery labeler tool"/>
+    </div>
+</body>
+</html>

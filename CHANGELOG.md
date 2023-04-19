@@ -5,6 +5,17 @@
 - Added copy/paste capability to labeler tool as requested in [issue #10](https://github.com/microsoft/satellite-imagery-labeling-tool/issues/10). See [docs for more information](https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Labeler.md#copy--paste-shapes). 
 - Bug fix: Address [issue #11](https://github.com/microsoft/satellite-imagery-labeling-tool/issues/11) related to secondary class not being captured in labeler tool. 
 
+
+## 2/1/2023
+
+- Removed: Azure Client ID token option disabled for Azure Maps from src/settings/map_settings.js
+- Changed: Azure Maps subscription key read from an environment variable, so it can be used in Docker containers
+- Added packaging to bundle and start local server using Parcel, some minor code changes and restructuring to facilitate this
+- Changed: typos fixed in markdown documents
+- Added docs/Developers-guide.md documenting how to build for development and deployment in a container
+- Azure Maps subscription key documentation updated to use environment variable
+- Added Dockerfile to build and run server
+
 ## 10/24/2022
 
 - Bug fix: "Uncaught ReferenceError: removeExpireData is not defined".

@@ -66,7 +66,7 @@ export class Utils {
      * @param {*} geometry Optional. A geometry to limit the features to (intersection test).
      * @param {*} newProps Optional. A set of new properties to assign to the feature.
      * @param {*} maxFeatures Optional. Max number of features to return.
-     * @returns 
+     * @returns
      */
     static filterFeatures(features, drawType, geometry, newProps, maxFeatures) {
         let count = 0;
@@ -162,9 +162,9 @@ export class Utils {
     }
 
     /**
-     * Helper method for saving a file locally. 
+     * Helper method for saving a file locally.
      * @param {*} fileName The name of the file to create.
-     * @param {*} blobContent The blob content of the file. 
+     * @param {*} blobContent The blob content of the file.
      */
     static saveFile(fileName, blobContent) {
         //Create a download link, with the URL containing the blob content, then trigger the click event on the link.
@@ -245,7 +245,7 @@ export class Utils {
     }
 
     /**
-     * Makes a GET request for a URL, and signs the request with the maps authOptions. 
+     * Makes a GET request for a URL, and signs the request with the maps authOptions.
      * @param {*} map An Azure Maps control instance.
      * @param {*} url The URL to make a request to.
      * @param {*} proxy Optional. A URL to a proxy service.
@@ -299,11 +299,11 @@ export class Utils {
     }
 
     /**
-     * Inflates a layer from a config file and adds it to the map. 
+     * Inflates a layer from a config file and adds it to the map.
      * @param {*} map Azure Maps control instance to add the layer to.
      * @param {*} name The name/ID of the layer.
      * @param {*} options The options for the layer. Must include a "type" property indicating the type of layer to create.
-     * @returns The created layer instance or null. 
+     * @returns The created layer instance or null.
      */
     static inflateLayer(map, name, options) {
         var layer = null;
@@ -362,7 +362,7 @@ export class Utils {
         //Get all the layers within the basemap style.
         const layers = map.map.getStyle().layers;
 
-        //Loop through all layers within the basemap. 
+        //Loop through all layers within the basemap.
         for (let i = 0; i < layers.length; i++) {
             let l = layers[i];
 
@@ -412,7 +412,7 @@ export class Utils {
     }
 
     /**
-     * Helper method for setting visibility of layers within the basemap. 
+     * Helper method for setting visibility of layers within the basemap.
      * @param {*} map Azure Maps control instance.
      * @param {*} isVisible Boolean indicating if layer(s) should be visible or not.
      * @param {*} filter A filter function that takes in the layer details, and returns a true for the layers that should have their visibility updated.
@@ -423,7 +423,7 @@ export class Utils {
         //Get all the layers within the basemap style.
         const layers = map.map.getStyle().layers;
 
-        //Loop through all layers within the basemap. 
+        //Loop through all layers within the basemap.
         for (let i = 0; i < layers.length; i++) {
             //Apply filter logic.
             if (filter(layers[i])) {
@@ -546,7 +546,7 @@ export class Utils {
     ////////////////////////////////////
 
     /**
-     * Create a radio or checkbox element with a label. 
+     * Create a radio or checkbox element with a label.
      * @param {string} type The type of input element to create. Supports radio, and checkbox.
      * @param {string} displayName The display name to show with the input.
      * @param {boolean} checked Optional. If the input is checked or not. For radio and checkboxes.
@@ -587,7 +587,7 @@ export class Utils {
 
     /**
      * Gets the selected value from a select element.
-     * @param {*} selector The id or instanceof a select element to set the value on.    
+     * @param {*} selector The id or instanceof a select element to set the value on.
      * @param {*} property The property name to get the value from. Default: 'value'
      * @returns The selected value from a select element.
      */
@@ -621,7 +621,7 @@ export class Utils {
     /**
      * Takes an array of element ID's and returns an object where each ID is the key, and the value is the element object.
      * @param {*} elmIds An array of element id's.
-     * @returns 
+     * @returns
      */
     static getElementsByIds(elmIds) {
         const elms = {};
@@ -679,7 +679,7 @@ export class SimpleEventerClass {
     }
 
     /**
-     * Trigger the event with the event name. 
+     * Trigger the event with the event name.
      * @param {*} name The event name.
      * @param  {...any} args Any arguments to pass through to the event handlers.
      * @returns A boolean indicating if there are any listeners attached to the event.

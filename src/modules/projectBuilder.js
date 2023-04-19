@@ -94,7 +94,7 @@ export class ProjectBuilderApp {
             }
         };
 
-        //Click event for a button to load local project file. 
+        //Click event for a button to load local project file.
         document.getElementById('loadProjectBtn').onclick = () => {
             loadLocalProjectFile.click();
         };
@@ -151,7 +151,7 @@ export class ProjectBuilderApp {
             }
         });
 
-        //Customize the line rendering options in the drawing layer.. 
+        //Customize the line rendering options in the drawing layer..
         const layers = drawingManager.getLayers();
         const lineOptions = {
             strokeWidth: 3,
@@ -171,7 +171,7 @@ export class ProjectBuilderApp {
 
         //Create a layer to display the area of a grid cell.
         const gridLayer = new atlas.layer.PolygonLayer(gridSource, null, {
-            //Color based on the availability of layers in each cell. 
+            //Color based on the availability of layers in each cell.
             fill: [
 
             ]
@@ -207,7 +207,7 @@ export class ProjectBuilderApp {
             position: 'bottom-left'
         });
 
-        //Initialize step 2 which needs the map to be ready.        
+        //Initialize step 2 which needs the map to be ready.
         self.#initStep2();
     };
 
@@ -236,7 +236,7 @@ export class ProjectBuilderApp {
      * Initialize step 1.
      */
     #initStep1() {
-        const self = this;       
+        const self = this;
 
         const binding = self.#binding;
         const props = self.#config.properties;
@@ -250,17 +250,17 @@ export class ProjectBuilderApp {
             preview.innerHTML = marked.parse(instructions.value);
         });
 
-        
+
         const customDataSwitch = document.getElementById('customDataSwitch');
         const customDataServiceButtonLabel = document.getElementById('customDataServiceButtonLabel');
         const customDataServiceLabel = document.getElementById('customDataServiceLabel');
-        
+
         customDataSwitch.addEventListener('click', () => {
             if(customDataSwitch.checked){
                 customDataServiceLabel.style.display = '';
                 customDataServiceButtonLabel.style.display = '';
             } else {
-                customDataServiceLabel.style.display = 'none';                
+                customDataServiceLabel.style.display = 'none';
                 customDataServiceButtonLabel.style.display = 'none';
                 props.customDataServiceLabel = null;
                 props.customDataService = null;
@@ -411,7 +411,7 @@ export class ProjectBuilderApp {
             self.#recalculateGrid();
         };
 
-        //Load data from local file. 
+        //Load data from local file.
         const importAreaFile = document.getElementById('importAreaFile');
         importAreaFile.onchange = (e) => {
             const source = self.#drawingManager.getSource();
@@ -471,7 +471,7 @@ export class ProjectBuilderApp {
     }
 
     /**
-     * Imports an area of interest from an array of features. Will grab the first polygon in the array. 
+     * Imports an area of interest from an array of features. Will grab the first polygon in the array.
      * @param {*} features Array of features.
      */
     #importFirstPolygon(features) {
@@ -709,7 +709,7 @@ export class ProjectBuilderApp {
                 }
             }
 
-            //Create a zip file to put all the files into.            
+            //Create a zip file to put all the files into.
             const zip = new JSZip();
 
             //Add an empty results folder.
@@ -718,7 +718,7 @@ export class ProjectBuilderApp {
             const fileFolder = zip.folder("tasks");
             let fileName = '';
 
-            //Loop through each grid cell and create a config file. 
+            //Loop through each grid cell and create a config file.
             gridCells.features.forEach((gc, i) => {
                 //Assign a name/ID to the grid cell.
                 gc.properties.name = `${config.project_name.replaceAll(' ', '_')}_${i}`;
@@ -871,10 +871,10 @@ export class ProjectBuilderApp {
     }
 
     /**
-     * Calculates a square grid over a bounding box, then filters it to only the locations that intersect an area of interest. 
+     * Calculates a square grid over a bounding box, then filters it to only the locations that intersect an area of interest.
      * For those cells that are kept, a list of all layer ID's that intersect the cell are captured.
-     * For performance and nice UX, square grid is calculated based on mercator pixels. 
-     * The area of a single cell will be relative to the ground resolution in the center of the bounding box of the area of interest. 
+     * For performance and nice UX, square grid is calculated based on mercator pixels.
+     * The area of a single cell will be relative to the ground resolution in the center of the bounding box of the area of interest.
      * As such, the size of a cell will vary slightly depending on how far it is north.south from the center of the bounding box.
      * @param {*} aoi Area of interest.
      * @param {*} cellSize The approximate size of a single size (width and height) in kilometers.

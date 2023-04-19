@@ -1,0 +1,29 @@
+{
+  "name": "satellite-imagery-labeling-tool",
+  "version": "2.0.0",
+  "description": " This is a lightweight web-interface for creating and sharing vector annotations over satellite/aerial imagery scenes. ",
+  "directories": {
+    "doc": "docs",
+    "example": "example"
+  },
+  "source": "src/index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "parcel build --public-url ./",
+    "start": "parcel",
+    "clean": "rm -r dist .parcel-cache"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UMassCDS/satellite-imagery-labeling-tool.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/UMassCDS/satellite-imagery-labeling-tool/issues"
+  },
+  "homepage": "https://github.com/UMassCDS/satellite-imagery-labeling-tool#readme",
+  "devDependencies": {
+    "parcel": "^2.8.3"
+  }
+}

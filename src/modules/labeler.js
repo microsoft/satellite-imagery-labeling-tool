@@ -1,10 +1,12 @@
 import { appSettings } from '../settings/labeler_settings.js';
 import { mapSettings } from '../settings/map_settings.js';
 
+import { BlobServiceClient } from "@azure/storage-blob";
 import { AnnotationClassControl, SearchBarControl, SimpleContentControl, SimpleLayerControl } from './controls/customMapControls.js';
 import { AddLayerDialog } from './controls/dialogs.js';
 import { Flyout, Navbar } from './controls/layoutControls.js';
 import { Utils } from './utils.js';
+
 
 /** The main logic for the spatial annotation labeler app. */
 export class LabelerApp {
@@ -382,16 +384,83 @@ export class LabelerApp {
 		// Azure Blob Storage Import
 		// Replace them with your own Azure Blob Storage account information
 		// TODO: Import these values from the config file
-		const azureAccountName = "your_account_name";
-		const azureContainerName = "your_container_name";
-		const sasToken = "your_sas_token";
+		const azureAccountName = "";
+		const azureContainerName = "";
+		const sasToken = "";
+		// function inputs filetype (task or project) and loads the file from Azure Blob Storage
+		// async function loadAzureFile(fileType) {
+		// 	const fileName = prompt("Enter the file name from Azure Blob Storage:");
 
-		// Add this function to your existing JavaScript code
+		// 	if (fileName) {
+		// 		// const blobUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainerName}/${fileName}${sasToken}`;
+		// 		const blobUrl = `https://${azureContainerName}.blob.core.windows.net/${azureContainerName}/${fileName}`;
+		// 		const response = await fetch(blobUrl);
+		// 		const data = await response.text();
+
+
+		// if (fileType === "task") {
+		// 	try {
+		// 		let fc = JSON.parse(data);
+		// 		if (fc && fc.type === 'FeatureCollection' && fc.features && fc.features.length > 0) {
+		// 			const defaultProps = Object.assign({}, appSettings.defaultConfig.features[0].properties);
+		// 			fc.features[0].properties = Object.assign(defaultProps, fc.features[0].properties);
+		// 			self.config = fc.features[0];
+
+		// 			self.#loadConfig();
+		// 		}
+		// 	} catch (e) {
+		// 		alert('Unable to load task file.');
+		// 	}
+		// } else if (fileType === "data") {
+		// 	try {
+		// 		const features = [];
+		// 		const lines = data
+		// 			.split('\n');
+		// 		for (let i = 0, len = lines.length; i < len; i++) {
+		// 			try {
+		// 				features.push(JSON.parse(lines[i]));
+		// 			} catch { }
+		// 		}
+
+		// 		self.#importFeatures(features, { source: `AzureBlobStorage|${fileName}` }, true, true);
+		// 	} catch (e) {
+		// 		console.log(e);
+		// 		alert('Unable to load data file.');
+		// 	}
+
+		// }
+		// 	}
+		// }
+
+		// Create the BlobServiceClient using the SAS token
+		const blobServiceClient = new BlobServiceClient(
+			`https://${azureAccountName}.blob.core.windows.net${sasToken}`
+		);
+
+
+		async function getAzureFiles() {
+			const containerClient = blobServiceClient.getContainerClient(azureContainerName);
+			let fileList = [];
+
+			for await (const blob of containerClient.listBlobsFlat()) {
+				fileList.push(blob.name);
+			}
+
+			return fileList;
+		}
+
+		async function selectAzureFile() {
+			const fileList = await getAzureFiles();
+			const selectedFile = prompt("Choose a file from Azure Blob Storage:\n" + fileList.join("\n"));
+
+			return selectedFile;
+		}
+
 		async function loadAzureFile(fileType) {
-			const fileName = prompt("Enter the file name from Azure Blob Storage:");
+			const fileName = await selectAzureFile();
 
 			if (fileName) {
-				const blobUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainerName}/${fileName}${sasToken}`;
+				const blobUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainerName}/${fileName}`;
 				const response = await fetch(blobUrl);
 				const data = await response.text();
 
@@ -411,7 +480,8 @@ export class LabelerApp {
 				} else if (fileType === "data") {
 					try {
 						const features = [];
-						const lines = data.split('\n');
+						const lines = data
+							.split('\n');
 						for (let i = 0, len = lines.length; i < len; i++) {
 							try {
 								features.push(JSON.parse(lines[i]));
@@ -420,8 +490,10 @@ export class LabelerApp {
 
 						self.#importFeatures(features, { source: `AzureBlobStorage|${fileName}` }, true, true);
 					} catch (e) {
+						console.log(e);
 						alert('Unable to load data file.');
 					}
+
 				}
 			}
 		}

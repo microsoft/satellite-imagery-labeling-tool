@@ -84,5 +84,11 @@ export let appSettings = {
 		"https://overpass.kumi.systems/api/",
 		"https://overpass.openstreetmap.fr/api/",
 		"https://overpass.openstreetmap.ru/cgi/"
-	]
+	],
+
+	azureConfig: {
+		'accountName': 'redcross8280',
+		'containerName': 'redcross8280',
+		'sasToken':'sp=racwdl&st=2023-05-20T19:06:58Z&se=2023-06-21T03:06:58Z&spr=https&sv=2022-11-02&sr=c&sig=28Mvl4x4YDr7%2FPIxAbkPiGYq4MOWMN5iiQ08s6sVARs%3D'
+	} 
 };

@@ -381,60 +381,13 @@ export class LabelerApp {
 			}
 		};
 
-		// Azure Blob Storage Import
-		// Replace them with your own Azure Blob Storage account information
-		// TODO: Import these values from the config file
-		const azureAccountName = "";
-		const azureContainerName = "";
-		const sasToken = "";
-		// function inputs filetype (task or project) and loads the file from Azure Blob Storage
-		// async function loadAzureFile(fileType) {
-		// 	const fileName = prompt("Enter the file name from Azure Blob Storage:");
-
-		// 	if (fileName) {
-		// 		// const blobUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainerName}/${fileName}${sasToken}`;
-		// 		const blobUrl = `https://${azureContainerName}.blob.core.windows.net/${azureContainerName}/${fileName}`;
-		// 		const response = await fetch(blobUrl);
-		// 		const data = await response.text();
-
-
-		// if (fileType === "task") {
-		// 	try {
-		// 		let fc = JSON.parse(data);
-		// 		if (fc && fc.type === 'FeatureCollection' && fc.features && fc.features.length > 0) {
-		// 			const defaultProps = Object.assign({}, appSettings.defaultConfig.features[0].properties);
-		// 			fc.features[0].properties = Object.assign(defaultProps, fc.features[0].properties);
-		// 			self.config = fc.features[0];
-
-		// 			self.#loadConfig();
-		// 		}
-		// 	} catch (e) {
-		// 		alert('Unable to load task file.');
-		// 	}
-		// } else if (fileType === "data") {
-		// 	try {
-		// 		const features = [];
-		// 		const lines = data
-		// 			.split('\n');
-		// 		for (let i = 0, len = lines.length; i < len; i++) {
-		// 			try {
-		// 				features.push(JSON.parse(lines[i]));
-		// 			} catch { }
-		// 		}
-
-		// 		self.#importFeatures(features, { source: `AzureBlobStorage|${fileName}` }, true, true);
-		// 	} catch (e) {
-		// 		console.log(e);
-		// 		alert('Unable to load data file.');
-		// 	}
-
-		// }
-		// 	}
-		// }
+		const azureAccountName = appSettings.azureConfig.accountName;
+		const azureContainerName = appSettings.azureConfig.containerName;
+		const sasToken = appSettings.azureConfig.sasToken;
 
 		// Create the BlobServiceClient using the SAS token
 		const blobServiceClient = new BlobServiceClient(
-			`https://${azureAccountName}.blob.core.windows.net${sasToken}`
+			`https://${azureAccountName}.blob.core.windows.net?${sasToken}`
 		);
 
 
@@ -460,7 +413,8 @@ export class LabelerApp {
 			const fileName = await selectAzureFile();
 
 			if (fileName) {
-				const blobUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainerName}/${fileName}`;
+				const blobUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainerName}/${fileName}?${sasToken}`;
+
 				const response = await fetch(blobUrl);
 				const data = await response.text();
 
@@ -648,8 +602,29 @@ export class LabelerApp {
 				fileName = `${fileName}.${fileExt}`;
 			}
 
+			
+			const azureAccountName = appSettings.azureConfig.accountName;
+			const azureContainerName = appSettings.azureConfig.containerName;
+			const sasToken = appSettings.azureConfig.sasToken;
+
+			const blobServiceClient = new BlobServiceClient(
+				`https://${azureAccountName}.blob.core.windows.net?${sasToken}`
+			);
+
+			async function saveToAzure() {
+				const containerClient = blobServiceClient.getContainerClient(azureContainerName);
+			  
+				const currentTime = new Date();
+				const blobName = "labeled_" + currentTime.toLocaleDateString('de-DE') + "_" + currentTime.toLocaleTimeString('de-DE') + "_"+ fileName;
+				console.log(blobName);
+				const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+				const uploadBlobResponse = await blockBlobClient.uploadData(outputBlob);
+				console.log(`Upload block blob ${blobName} successfully`, uploadBlobResponse.requestId);
+			}
+
 			if (outputBlob !== null) {
 				Utils.saveFile(fileName, outputBlob);
+				saveToAzure();
 			}
 		};
 	}

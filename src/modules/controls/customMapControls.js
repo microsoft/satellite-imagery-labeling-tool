@@ -186,7 +186,8 @@ export class SimpleLayerControl {
 		//If valid Azure Maps auth provided, add Azure Maps satellite imagery as an option.
 		if (hasAZMapAuth && map.getStyle().style.indexOf('satellite') === 0) {
 			app.map.layers.getLayerById('base').layers.forEach(l => {
-				if (l.id === 'microsoft.maps.base.base.satelliteLayer') {
+				if (l.id === 'microsoft.maps.base.base.satelliteLayer' || 
+				l.id === 'microsoft.bing.maps.base.bing-aerial-layer') {
 					self.#azureMapsLayer = l;
 				}
 			});

@@ -338,7 +338,12 @@ export class Utils {
                     });
 
                     //Add the layer below the transit layer so that road labels and shields appear above the layer when displayed.
-                    map.layers.add(layer, 'transit');
+                    if(app.map.layers.layerIndex.find((l) => l.id === 'transit')) {
+                        map.layers.add(layer, 'transit');
+                    } else {
+                        //If the transit layer doesn't exist, add the layer below the roads layer. Azure Maps team broke the map styles and plan to fix. This is a temporary workaround.
+                        map.layers.add(layer, 'roads');
+                    }
                 }
             } else if (layer.setOptions && layer.constructor.name === options.type) {
                 //If the layer already exists, has a setOptions function, and the class name and options type properties are the same, try updating the layers options.

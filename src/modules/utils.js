@@ -14,7 +14,26 @@ export class Utils {
         'microsoft.maps.base.transit.Country border',
         'microsoft.maps.base.transit.Treaty country border',
         'microsoft.maps.base.transit.Disputed country border',
-        'microsoft.maps.base.transit.State border'
+        'microsoft.maps.base.transit.State border',
+        'microsoft.bing.maps.roads.admin_division1_boundary_xlarge_sovereign_line-merged2',
+        'microsoft.bing.maps.roads.admin_division1_boundary_russia_line',
+        'microsoft.bing.maps.roads.admin_division1_boundary_uk_line-merged2',
+        'microsoft.bing.maps.roads.admin_division1_boundary_europe_line',
+        'microsoft.bing.maps.roads.sovereign_boundary_disputed_line',
+        'microsoft.bing.maps.roads.admin_division1_boundary_disputed_line',
+        'microsoft.bing.maps.roads.admin_division1_boundary_normal_line',
+        'microsoft.bing.maps.roads.entity_override_sovereign_boundary_hong_kong_sar_line',
+        'microsoft.bing.maps.roads.entity_override_sovereign_boundary_china_line',
+        'microsoft.bing.maps.roads.admin_division1_line',
+        'microsoft.bing.maps.roads.entity_override_sovereign_boundary_hong_kong_sar_line_1',
+        'microsoft.bing.maps.roads.entity_override_sovereign_boundary_china_line_1',
+        'microsoft.bing.maps.roads.admin_division1_line_1',
+        'microsoft.bing.maps.roads.sovereign_boundary_normal_line',
+        'microsoft.bing.maps.roads.country_region_line',
+        'microsoft.bing.maps.roads.sovereign_boundary_normal_line_1',
+        'microsoft.bing.maps.roads.country_region_line_1',
+        'microsoft.bing.maps.roads.admin_division2_line',
+        'microsoft.bing.maps.roads.equator_line'
     ];
 
     /**
@@ -52,8 +71,91 @@ export class Utils {
         //'microsoft.maps.base.labels_places.Lake label',
         'microsoft.maps.base.labels_places.Landmark label',
         //'microsoft.maps.base.labels_places.National park label',
-        'microsoft.maps.base.labels_places.Ferry terminal'
+        'microsoft.maps.base.labels_places.Ferry terminal',
+        'microsoft.bing.maps.labels.generic_structure_footprint_label_hd',
+        'microsoft.bing.maps.labels.generic_structure_footprint_label',
+        'microsoft.bing.maps.labels.airport_runway_line_line_label',
+        'microsoft.bing.maps.labels.trail_line_label',
+        'microsoft.bing.maps.labels.promontory_fill_label',
+        'microsoft.bing.maps.labels.waterfall_symbol',
+        'microsoft.bing.maps.labels.geyser_symbol',
+        'microsoft.bing.maps.labels.hot_spring_symbol',
+        'microsoft.bing.maps.labels.spring_symbol',
+        'microsoft.bing.maps.labels.delta_symbol_label',
+        'microsoft.bing.maps.labels.wetland_fill_label',
+        'microsoft.bing.maps.labels.wetland_symbol_label',
+        'microsoft.bing.maps.labels.ruin_symbol_label',
+        'microsoft.bing.maps.labels.rest_area_symbol_label',
+        'microsoft.bing.maps.labels.ferry_terminal_gtfs_symbol',
+        'microsoft.bing.maps.labels.ferry_terminal_point_symbol',
+        'microsoft.bing.maps.labels.observation_point_symbol',
+        'microsoft.bing.maps.labels.mine_symbol_label',
+        'microsoft.bing.maps.labels.prison_symbol_label',
+        'microsoft.bing.maps.labels.bridge_chn_symbol_label',
+        'microsoft.bing.maps.labels.shipwreck_symbol',
+        'microsoft.bing.maps.labels.fort_symbol',
+        'microsoft.bing.maps.labels.battlefield_symbol',
+        'microsoft.bing.maps.labels.autorail_line_label-merged3',
+        'microsoft.bing.maps.labels.ferry_route_line_label-merged2',
+        'microsoft.bing.maps.labels.beach_fill_label-merged2',
+        'microsoft.bing.maps.labels.beach_symbol_label',
+        'microsoft.bing.maps.labels.monument_symbol',
+        'microsoft.bing.maps.labels.landmark_building_fill_label',
+        'microsoft.bing.maps.labels.amusement_park_fill_label',
+        'microsoft.bing.maps.labels.stadium_fill_label',
+        'microsoft.bing.maps.labels.race_track_symbol_label',
+        'microsoft.bing.maps.labels.playing_field_symbol_label-merged10',
+        'microsoft.bing.maps.labels.playing_field_tennis_symbol',
+        'microsoft.bing.maps.labels.golf_course_fill_label',
+        'microsoft.bing.maps.labels.hospital_fill_label',
+        'microsoft.bing.maps.labels.military_base_polygon_fill_label',
+        'microsoft.bing.maps.labels.administrative_building_fill_label',
+        'microsoft.bing.maps.labels.school_fill_label',
+        'microsoft.bing.maps.labels.higher_education_facility_fill_label',
+        'microsoft.bing.maps.labels.cemetery_fill_label',
+        'microsoft.bing.maps.labels.shopping_center_fill_label',
+        'microsoft.bing.maps.labels.ferry_terminal_polygon_fill_label',
+        'microsoft.bing.maps.labels.bus_station_fill_label',
+        'microsoft.bing.maps.labels.bus_station_symbol',
+        'microsoft.bing.maps.labels.airport_fill_label-merged6',
+        'microsoft.bing.maps.labels.zoo_fill_label',
+        'microsoft.bing.maps.labels.information_center_symbol_label',
+        'microsoft.bing.maps.labels.garden_sa_symbol',
+        'microsoft.bing.maps.labels.tourist_structure_point_sa_symbol',
+        'microsoft.bing.maps.labels.historical_site_symbol',
+        'microsoft.bing.maps.labels.fish_hatchery_fill_label',
+        'microsoft.bing.maps.labels.park_fill_label-merged2',
+        'microsoft.bing.maps.labels.park_city_fill_label',
+        'microsoft.bing.maps.labels.parking_lot_fill_label',
+        'microsoft.bing.maps.labels.parking_lot_symbol',
+        'microsoft.bing.maps.labels.parking_structure_fill_label-merged2',
+        'microsoft.bing.maps.labels.parking_structure_sa_symbol',
+        'microsoft.bing.maps.labels.camp_sa_symbol',
+        'microsoft.bing.maps.labels.generic_business_landmark_retired',
+        'microsoft.bing.maps.labels.generic_business_landmark',
+        'microsoft.bing.maps.labels.generic_transit_landmark',
+        'microsoft.bing.maps.labels.metro_station_symbol-merged3',
+        'microsoft.bing.maps.labels.railway_station_point_symbol',
+        'microsoft.bing.maps.labels.subway_wuxi_symbol-merged22',
+        'microsoft.bing.maps.labels.bus_station_point_symbol',
+        'microsoft.bing.maps.labels.premium_landmark',
+        'microsoft.bing.maps.labels.playground_symbol',
+        'microsoft.bing.maps.labels.airport_terminal_symbol_label',
+        'microsoft.bing.maps.labels.wall_symbol',
+        'microsoft.bing.maps.labels.swimming_pool_sa_symbol',
+        'microsoft.bing.maps.labels.recreational_structure_fill_label',
+        'microsoft.bing.maps.labels.nautical_structure_fill_label',
+        'microsoft.bing.maps.labels.industrial_structure_fill_label',
+        'microsoft.bing.maps.labels.educational_structure_fill_label',
+        'microsoft.bing.maps.labels.business_center_fill_label',
+        'microsoft.bing.maps.labels.outdoor_gym_symbol_label',
+        'microsoft.bing.maps.labels.airport_major_fill_label',
+        'microsoft.bing.maps.labels.subway_under_construction_chn_line_label',
+        'microsoft.bing.maps.labels.subway_chn_line_label',
+        'microsoft.bing.maps.labels.exit_symbol'
     ];
+
+    static _baseTranistLayer = null;
 
     ///////////////////////////////////////
     // General helper methods.
@@ -312,6 +414,14 @@ export class Utils {
             //Ensure layer doesn't already exist in the map.
             layer = map.layers.getLayerById(name);
 
+            if(_baseTranistLayer === null) {
+                app.map.layers.layerIndex.forEach((l) => {
+                    if(_baseTranistLayer === null && (l.id === 'transit' || l.id === 'roads' || l.id.startsWith('microsoft.bing.maps.roadDetails.road'))) {
+                        _baseTranistLayer = l.id ;
+                    } 
+                });
+            }
+
             if (!layer) {
                 switch (options.type) {
                     case 'TileLayer':
@@ -338,12 +448,7 @@ export class Utils {
                     });
 
                     //Add the layer below the transit layer so that road labels and shields appear above the layer when displayed.
-                    if(app.map.layers.layerIndex.find((l) => l.id === 'transit')) {
-                        map.layers.add(layer, 'transit');
-                    } else {
-                        //If the transit layer doesn't exist, add the layer below the roads layer. Azure Maps team broke the map styles and plan to fix. This is a temporary workaround.
-                        map.layers.add(layer, 'roads');
-                    }
+                    map.layers.add(layer, _baseTranistLayer);
                 }
             } else if (layer.setOptions && layer.constructor.name === options.type) {
                 //If the layer already exists, has a setOptions function, and the class name and options type properties are the same, try updating the layers options.

@@ -475,8 +475,8 @@ export class ProjectBuilderApp {
      * @param {*} features Array of features.
      */
     #importFirstPolygon(features) {
-        if (features) {
-            const self = this;
+        const self = this;
+        if (features) {            
             const filtered = Utils.filterFeatures(features, 'polygons', null, null, 1);
 
             if (filtered.length === 0) {

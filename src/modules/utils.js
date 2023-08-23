@@ -155,7 +155,7 @@ export class Utils {
         'microsoft.bing.maps.labels.exit_symbol'
     ];
 
-    static _baseTranistLayer = null;
+    static #BaseTranistLayer = null;
 
     ///////////////////////////////////////
     // General helper methods.
@@ -414,10 +414,10 @@ export class Utils {
             //Ensure layer doesn't already exist in the map.
             layer = map.layers.getLayerById(name);
 
-            if(_baseTranistLayer === null) {
+            if(Utils.#BaseTranistLayer === null) {
                 app.map.layers.layerIndex.forEach((l) => {
-                    if(_baseTranistLayer === null && (l.id === 'transit' || l.id === 'roads' || l.id.startsWith('microsoft.bing.maps.roadDetails.road'))) {
-                        _baseTranistLayer = l.id ;
+                    if(Utils.#BaseTranistLayer === null && (l.id === 'transit' || l.id === 'roads' || l.id.startsWith('microsoft.bing.maps.roadDetails.road'))) {
+                        Utils.#BaseTranistLayer = l.id ;
                     } 
                 });
             }
@@ -448,7 +448,7 @@ export class Utils {
                     });
 
                     //Add the layer below the transit layer so that road labels and shields appear above the layer when displayed.
-                    map.layers.add(layer, _baseTranistLayer);
+                    map.layers.add(layer, Utils.#BaseTranistLayer);
                 }
             } else if (layer.setOptions && layer.constructor.name === options.type) {
                 //If the layer already exists, has a setOptions function, and the class name and options type properties are the same, try updating the layers options.

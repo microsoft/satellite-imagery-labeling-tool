@@ -143,3 +143,13 @@ body {
 #powerToolsCard {
     display: grid;
 }
+
+@media only screen and (max-width: 600px) {
+    header span, .simple-search-control {
+        display: none;
+    }
+
+    .top-left.subcontrol-container  {
+        top: 52px;
+    }
+}

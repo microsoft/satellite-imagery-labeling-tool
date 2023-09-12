@@ -488,9 +488,10 @@ export class Utils {
      * @param {*} map An Azure Maps control instance.
      */
     static hideNonEssentialLayers(map) {
-        Utils.#setBaseLayerVisibility(map, false, (l) => {
+        Utils.#setBaseLayerVisibility(map, false, (l) => {            
+            var smallId =  l.id.toLowerCase();
             //If the layer ID starts with 'microsft.maps', and is a fill (polygon), a line layer other than a boarder layer, or a symbol layer containing POI content, hide the layer.
-            return (l.id && l.id.toLowerCase().indexOf('microsoft.maps.') === 0 && (
+            return (l.id && (smallId.indexOf('microsoft.maps.') === 0 || smallId.indexOf('microsoft.bing.maps.') === 0)  && (
                 l.type === 'fill' ||
                 (l.type === 'line' && Utils.#BorderLayers.indexOf(l.id) === -1) ||
                 (l.type === 'symbol' && Utils.#POILayers.indexOf(l.id) > -1)));

@@ -336,10 +336,13 @@ export class Utils {
         if (authOptions && authOptions.authType) {
             if (authOptions.authType === 'subscriptionKey') {
                 //Assume if the subscription key is longer thant 40 characters, that it is valid.
-                return authOptions.subscriptionKey && authOptions.subscriptionKey.length > 40;
+                return authOptions.subscriptionKey && authOptions.subscriptionKey.length > 40 && authOptions.subscriptionKey !== '[YOUR_AZURE_MAPS_KEY]';
             } else if (authOptions.authType === 'anonymous') {
                 //Assume valid if clientId is longer than 30 characters.
-                return authOptions.clientId && authOptions.clientId.length > 30;
+                return authOptions.clientId && authOptions.clientId.length > 30 && 
+
+                //If not hosted on microsoft.github.io, don't allow client ID 'd069e722-70c3-4dd6-8532-a6f4b18c9bfb'.
+                (window.location.href.toLowerCase().indexOf('microsoft.github.io') > -1 || authOptions.clientId !== 'd069e722-70c3-4dd6-8532-a6f4b18c9bfb');
             }
         }
 

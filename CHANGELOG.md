@@ -1,10 +1,15 @@
 # Changelog
 
-## 8/21/2023
+## 9/12/2023 [Version 2.0.3]
+
+- Enhancement: Modified CSS of labeler to make it more usable on smaller screens (e.g. mobile). 
+- Bug fix: Hide non-essential  map layers (e.g. road lines, railways...).
+
+## 8/21/2023 [Version 2.0.2]
 
 - Bug fix: Changes in Azure Maps styling of vector tiles broke how user layers are inserted between their layers. This resulted in raster imagery layers appearing on top of everything else and hiding all drawn data on the map. Modified code logic to handle the new styling changes in Azure Maps as it wasn't clear if they would fix the key feature that broke as a result of their change.
 
-## 3/6/2023
+## 3/6/2023 [Version 2.0.1]
 
 - Added copy/paste capability to labeler tool as requested in [issue #10](https://github.com/microsoft/satellite-imagery-labeling-tool/issues/10). See [docs for more information](https://github.com/microsoft/satellite-imagery-labeling-tool/blob/main/docs/Labeler.md#copy--paste-shapes). 
 - Bug fix: Address [issue #11](https://github.com/microsoft/satellite-imagery-labeling-tool/issues/11) related to secondary class not being captured in labeler tool. 
@@ -25,6 +30,6 @@
 
 - Changed OSM script file extentions from ".txt" to ".overpassql" as per [Issue #3](https://github.com/microsoft/satellite-imagery-labeling-tool/issues/3)
 
-## 9/21/2022
+## 9/21/2022 [Version 2.0.0]
 
 - Major upgrade, project completely rewritten to make it easier to use, faster, and also help in managing annotation projects at scale.

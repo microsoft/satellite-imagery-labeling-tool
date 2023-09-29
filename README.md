@@ -11,7 +11,7 @@ products:
 
 # Spatial imagery labeling toolkit
 
-![Version 2](https://img.shields.io/badge/Version-2.0.0-green.svg)
+![Version 2](https://img.shields.io/badge/Version-2.0.3-green.svg)
 
 This is a lightweight web-interface for creating and sharing vector labels (lines or polygons) over satellite/aerial imagery scenes. This project includes the following tools:
 

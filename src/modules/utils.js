@@ -402,6 +402,15 @@ export class Utils {
                 })
         });
     }
+    static setBaseTransitLayer(map) {
+        if(map && Utils.#BaseTranistLayer === null) {
+            app.map.layers.layerIndex.forEach((l) => {
+                if(Utils.#BaseTranistLayer === null && ((l.options && l.options.lineCap) || l.id === 'transit' || l.id === 'roads' || l.id.startsWith('microsoft.bing.maps.roadDetails.road'))) {
+                    Utils.#BaseTranistLayer = l.id ;
+                } 
+            });
+        }
+    }
 
     /**
      * Inflates a layer from a config file and adds it to the map. 
@@ -417,13 +426,7 @@ export class Utils {
             //Ensure layer doesn't already exist in the map.
             layer = map.layers.getLayerById(name);
 
-            if(Utils.#BaseTranistLayer === null) {
-                app.map.layers.layerIndex.forEach((l) => {
-                    if(Utils.#BaseTranistLayer === null && (l.id === 'transit' || l.id === 'roads' || l.id.startsWith('microsoft.bing.maps.roadDetails.road'))) {
-                        Utils.#BaseTranistLayer = l.id ;
-                    } 
-                });
-            }
+            Utils.setBaseTransitLayer(map);
 
             if (!layer) {
                 switch (options.type) {

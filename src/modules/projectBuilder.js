@@ -170,12 +170,7 @@ export class ProjectBuilderApp {
         map.map.getSource(gridSource.getId()).promoteId = '_azureMapsShapeId';
 
         //Create a layer to display the area of a grid cell.
-        const gridLayer = new atlas.layer.PolygonLayer(gridSource, null, {
-            //Color based on the availability of layers in each cell. 
-            fill: [
-
-            ]
-        });
+        const gridLayer = new atlas.layer.PolygonLayer(gridSource);
 
         //Create a layer to display the outline of a grid cell.
         const gridOutlineLayer = new atlas.layer.LineLayer(gridSource, null, {

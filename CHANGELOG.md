@@ -1,5 +1,11 @@
 # Changelog
 
+## 10/4/2023 [Version 2.0.4]
+
+- Updated to version 3 of the Azure Maps Web SDK.
+- Modified map loading logic to better detect missing or invalid Azure Maps auth option and support that scenario better.
+- Bug fix: related to recent base map style changes in Azure Maps.
+
 ## 9/12/2023 [Version 2.0.3]
 
 - Enhancement: Modified CSS of labeler to make it more usable on smaller screens (e.g. mobile). 

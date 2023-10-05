@@ -718,9 +718,9 @@ export class AddLayerDialog extends SimpleEventerClass {
                 //Replace dash with minus sign.
                 const lon = parseFloat(pair[0].replace('−', '-').trim());
                 const lat = parseFloat(pair[1].replace('−', '-').trim());
-                const idx = nameIdx[x.name];
+                const idx = nameIdx.indexOf(x.name);
 
-                if(idx > -1 && !isNaN(lon) && !isNaN(lat) && typeof extents[x.name] !== 'undefined'){
+                if(idx > -1 && !isNaN(lon) && !isNaN(lat) && typeof extents[idx] !== 'undefined'){
                     extents[idx] = [
                         atlas.math.normalizeLongitude(lon), 
                         atlas.math.normalizeLatitude(lat)

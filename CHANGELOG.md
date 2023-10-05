@@ -1,5 +1,10 @@
 # Changelog
 
+## 10/5/2023 [Version 2.0.5]
+
+- Improved logic of image layer coordinate parsing to support a couple of edge case involving hyphen/dash as a minus sign.
+- Added workaround for a bug in Azure Maps when the image layer bounding box to corner coordinate conversion returns an object that looks like an array, but isn't actually an array.
+
 ## 10/4/2023 [Version 2.0.4]
 
 - Updated to version 3 of the Azure Maps Web SDK.

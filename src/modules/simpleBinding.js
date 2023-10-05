@@ -58,7 +58,8 @@ export class SimpleBinding {
                     let input = e;
                     switch (input.type) {
                         case 'number':
-                            val = parseFloat(val);
+                            //Replace dash with minus sign.
+                            val = parseFloat(val.replace('−', '-'));
                             break;
                         case 'checkbox':
                             if (isCheckboxArray) {

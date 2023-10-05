@@ -756,7 +756,11 @@ export class LabelerApp {
 						filter = null;
 					}
 
-					const heading = parseFloat(sb.getAttribute('rel'));
+					let h = sb.getAttribute('rel');
+
+					//Replace dash with minus sign.
+					h = h.replace('−', '-');
+					const heading = parseFloat(h);
 
 					//Calculate the meters per pixels
 					const cam = self.map.getCamera();

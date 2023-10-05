@@ -335,6 +335,10 @@ export class AddLayerDialog extends SimpleEventerClass {
         const urlLocalUrl = c.querySelector('.url-local-file input').value;
         const bounds = self.#getBounds();
 
+        //Clear file input so it can be used again.
+        const fileInput = c.querySelector('.url-local-file input[type="file"]');
+        fileInput.value = '';
+        
         switch (layerType) {
             //Gather inputs for a tile layer.
             case 'TileLayer':
@@ -389,16 +393,23 @@ export class AddLayerDialog extends SimpleEventerClass {
                 break;
             //Gather inputs for an image layer using bounding box and a rotation.
             case 'ImageLayerBounds':
+                let ilb = atlas.layer.ImageLayer.getCoordinatesFromEdges(
+                    bounds[3], bounds[1], bounds[2], bounds[0],
+
+                    parseFloat(c.querySelector('input[name="rotationValue"]').value)
+                );
+
+                //Workaround for bug in atlas.layer.ImageLayer.getCoordinatesFromEdges where an object that looks like an array is returned, but not an actual array.
+                if(!Array.isArray(ilb)) {
+                    ilb = Object.keys(ilb).map(i => {return ilb[i]});
+                }
+
                 layers[ln] = {
                     type: 'ImageLayer',
                     url: urlLocalUrl,
 
                     //Calculate the corner coordinates using the bounding box and rotation.
-                    coordinates: atlas.layer.ImageLayer.getCoordinatesFromEdges(
-                        bounds[3], bounds[1], bounds[2], bounds[0],
-
-                        parseFloat(c.querySelector('input[name="rotationValue"]').value)
-                    ),
+                    coordinates: ilb,
                     enabled: true
                 };
                 break;
@@ -670,8 +681,9 @@ export class AddLayerDialog extends SimpleEventerClass {
 
         const parts = boundsText.split(',');
         if(parts.length >= 4){
-            parts.forEach((x, i)=> {
-                const num = parseFloat(x.trim())
+            parts.forEach((x, i)=> { 
+                //Replace dash with minus sign.
+                const num = parseFloat(x.replace('−', '-').trim())
                 if(!isNaN(num) && i <= 4) {
                     //Even index values are longitudes.
                     if(i%2 === 0){                        
@@ -703,8 +715,9 @@ export class AddLayerDialog extends SimpleEventerClass {
         inputs.forEach(x => {
             const pair = x.value.split(',');
             if(pair.length >= 2){
-                const lon = parseFloat(pair[0].trim());
-                const lat = parseFloat(pair[1].trim());
+                //Replace dash with minus sign.
+                const lon = parseFloat(pair[0].replace('−', '-').trim());
+                const lat = parseFloat(pair[1].replace('−', '-').trim());
                 const idx = nameIdx[x.name];
 
                 if(idx > -1 && !isNaN(lon) && !isNaN(lat) && typeof extents[x.name] !== 'undefined'){

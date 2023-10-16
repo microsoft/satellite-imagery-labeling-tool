@@ -204,14 +204,14 @@ select, textarea, input[type="text"], #layerCardLayerList {
 }
 
 .simple-layer-control {
-    display: block; 
+    display: block !important; 
     background-color: var(--main_bg_color);
     padding: 5px;
     border-radius: 5px;
 }
 
 .simple-layer-control-title {
-    display: block;
+    display: block !important;
     font-weight: bold;
     margin-bottom: 5px;
 }
@@ -226,7 +226,7 @@ select, textarea, input[type="text"], #layerCardLayerList {
 }
 
 .simple-layer-control label{
-    display: block;
+    display: block !important;
 }
 
 .simple-layer-control span {
@@ -252,18 +252,18 @@ select, textarea, input[type="text"], #layerCardLayerList {
 
 .annotation-class-control
 {
-    display: block; 
+    display: block !important; 
     background-color: var(--main_bg_color);
     padding: 5px;
     border-radius: 5px;
 }
 
 .annotation-class-control-btn-group {
-    display: grid; 
+    display: grid !important; 
 }
 
 .annotation-class-control-title {
-    display: block;
+    display: block !important;
     font-weight: bold;
     margin-bottom: 5px;
 }
@@ -302,7 +302,7 @@ select, textarea, input[type="text"], #layerCardLayerList {
 }
 
 input[type="file"] {
-    display: none;
+    display: none !important;
 }
 
 input[type="checkbox"], input[type="radio"] , input[type="range"] {
@@ -310,12 +310,12 @@ input[type="checkbox"], input[type="radio"] , input[type="range"] {
 }
 
 .simpleContentControl {
-    display: block; 
+    display: block !important; 
     background-color: var(--main_bg_color);
     padding: 5px;
     border-radius: 5px;
 }
 
 select option[disabled] {
-    display: none;
+    display: none !important;
 }

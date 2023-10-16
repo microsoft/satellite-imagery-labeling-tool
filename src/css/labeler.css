@@ -146,7 +146,7 @@ body {
 
 @media only screen and (max-width: 600px) {
     header span, .simple-search-control {
-        display: none;
+        display: none !important;
     }
 
     .top-left.subcontrol-container  {

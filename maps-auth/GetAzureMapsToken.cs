@@ -1,11 +1,9 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Functions.Worker;
 using Azure.Core;
 using Azure.Identity;
+using Microsoft.Azure.Functions.Worker;
 
 namespace Microsoft.GetAzureMapsToken
 {
@@ -27,7 +25,7 @@ namespace Microsoft.GetAzureMapsToken
         };
 
 
-        [FunctionName("GetAzureMapsToken")]
+        [Function("GetAzureMapsToken")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req)
         {

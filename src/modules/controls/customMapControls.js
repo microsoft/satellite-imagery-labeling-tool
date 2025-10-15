@@ -390,6 +390,11 @@ export class SimpleLayerControl {
 		});
 
 		this.#currentLayer = layerId;
+
+		//Force the map to render to display the new layer immediately.
+		if (this.map && this.map.map && this.map.map.triggerRepaint) {
+			this.map.map.triggerRepaint();
+		}
 	}
 }
 

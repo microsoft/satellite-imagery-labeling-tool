@@ -431,6 +431,14 @@ export class Utils {
             if (!layer) {
                 switch (options.type) {
                     case 'TileLayer':
+                        //Ensure maxSourceZoom or maxNativeZoom is used as maxzoom to prevent loading tiles beyond the available zoom level
+                        if (options.maxzoom === undefined) {
+                            if (options.maxNativeZoom !== undefined) {
+                                options.maxzoom = options.maxNativeZoom;
+                            } else if (options.maxSourceZoom !== undefined) {
+                                options.maxzoom = options.maxSourceZoom;
+                            }
+                        }
                         layer = new atlas.layer.TileLayer(options, name);
                         break;
                     case 'ImageLayer':

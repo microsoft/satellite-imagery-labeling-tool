@@ -431,12 +431,12 @@ export class Utils {
             if (!layer) {
                 switch (options.type) {
                     case 'TileLayer':
-                        //Ensure maxSourceZoom or maxNativeZoom is used as maxzoom to prevent loading tiles beyond the available zoom level
-                        if (options.maxzoom === undefined) {
-                            if (options.maxNativeZoom !== undefined) {
-                                options.maxzoom = options.maxNativeZoom;
-                            } else if (options.maxSourceZoom !== undefined) {
-                                options.maxzoom = options.maxSourceZoom;
+                        //Check for URL parameter to override maxSourceZoom for all TileLayers
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.has('maxSourceZoom')) {
+                            const maxSourceZoomOverride = parseInt(urlParams.get('maxSourceZoom'));
+                            if (!isNaN(maxSourceZoomOverride)) {
+                                options.maxSourceZoom = maxSourceZoomOverride;
                             }
                         }
                         layer = new atlas.layer.TileLayer(options, name);

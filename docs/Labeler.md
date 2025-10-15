@@ -10,7 +10,8 @@ The labeler tool is the primary tool that those who will be reviewing the imager
 
 2. Load a labeling project task file (Optional). Once loaded, the map zooms into the assigned area and displays a yellow dashed outline of the area you are expected to label. Instructions from the project administrator may appear and provide some guidance on what data to capture. 
    - If the URL to the labeler contains something like `?taskUrl=[some text]` the labeler will automatically attempt to load in the project task file. 
-   - If you have a task file locally, you can open it by going to `Import data -> Local task file` and selecting the local task file. 
+   - If you have a task file locally, you can open it by going to `Import data -> Local task file` and selecting the local task file.
+   - **Optional URL parameter**: You can add `&maxSourceZoom=[number]` to the URL to override the maximum zoom level for all tile layers. This prevents the map from requesting tiles at zoom levels beyond what the imagery supports. For example: `?taskUrl=...&maxSourceZoom=18` 
 
 3. Use the drawing tools in the top right corner to draw features on the map. 
     > Be sure to select the classification of the data using the panel below the drawing tools. See [Drawing tools documentation](https://learn.microsoft.com/azure/azure-maps/drawing-tools-interactions-keyboard-shortcuts) for details on all the different ways to draw features on the map.

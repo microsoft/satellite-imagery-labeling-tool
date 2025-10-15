@@ -60,7 +60,6 @@ Tile layers display large data sets that have been cropped into smaller images c
 - **Bounds** - Bounding box information to limit where the tiles are loaded. The format is "minLon, minLat, maxLon, maxLat".
 - **Tile size** - The dimensions of the tiles in pixels. 256 is the most common, with 512 starting to be used in newer services.
 - **Subdomains** - A comma delimited list of subdomains that the tile service endpoint supports. Large scale tile services will leverage this for higher performance and load balancing. In most cases, this isn't used.
-- **maxNativeZoom** or **maxSourceZoom** - The maximum zoom level at which the tile source has imagery. When the map is zoomed beyond this level, it will use overzoomed tiles from the max native zoom instead of requesting tiles that don't exist. This prevents 404 errors and improves performance. For example, if your tiles only go up to zoom level 18, set this to 18.
 
 ### Bulk load TileJSON
 

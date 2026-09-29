@@ -4,7 +4,31 @@ import { mapSettings } from '../settings/map_settings.js'
 import { Navbar, Flyout } from './controls/layoutControls.js'
 import { Utils } from './utils.js';
 import { SimpleLayerControl, SearchBarControl, AnnotationClassControl, SimpleContentControl } from './controls/customMapControls.js';
-import { AddLayerDialog } from './controls/dialogs.js';
+import {
+	AddLayerDialog,
+	confirmCapacityOverride,
+	confirmPrivateDestination
+} from './controls/dialogs.js';
+import { renderInstruction, renderSafeMarkdown, setText } from './safeRendering.js';
+import {
+	createCapacityOverrideAttempt,
+	createUntrustedSource
+} from './intakeSession.js';
+import {
+	createWorkflowDestinationDecision,
+	requireAllowedDestination,
+	validateExpandedDestination
+} from './remoteDestination.js';
+import {
+	confirmPartialGeoJsonlImport,
+	isMatchingReadyResult,
+	startGeoJsonlIntake
+} from './geoJsonlIntake.js';
+import {
+	loadValidatedTaskFromUrl,
+	validateLabelerAutosave,
+	validateLabelerTask
+} from './labelerTaskIntake.js';
 
 /** The main logic for the spatial annotation labeler app. */
 export class LabelerApp {
@@ -31,12 +55,19 @@ export class LabelerApp {
 	};
 	#osmWizardWorker;
 	#cdWorker;
+	#osmWizardRequestId;
+	#customDataRequestId;
+	#customDataRequest;
 	#featureSource = new atlas.source.DataSource();
 	#fillLayer;
 	#outlineLayer;
 	#aoiSource = new atlas.source.DataSource();
 	#bulkEditMode;
 	#shiftIntervalToken;
+	#geoJsonlImportOperation;
+	#taskLoadId;
+	#pendingTaskLoadId;
+	#taskBaseUrl = window.location.href;
 
 	#navItems = [
 		{
@@ -127,7 +158,7 @@ export class LabelerApp {
 		const hasAZMapAuth = Utils.isAzureMapsAuthValid(mapSettings.azureMapsAuth);
 		this.#hasAZMapAuth = hasAZMapAuth;
 
-		document.querySelector('#appSubtitle').innerHTML = appSettings.appSubtitle;
+		setText(document.querySelector('#appSubtitle'), appSettings.appSubtitle);
 		document.querySelector('title').innerText = appSettings.appSubtitle;
 
 		//Setup navbar.
@@ -164,8 +195,11 @@ export class LabelerApp {
 
 		self.map.events.add('ready', self.#mapReady);
 
-		//Make clone of the default config.
-		self.config = Object.assign({}, appSettings.defaultConfig.features[0]);
+		const defaultTask = validateLabelerTask(appSettings.defaultConfig, {
+			sourceId: 'configuration:default-task',
+			defaultTask: appSettings.defaultConfig.features[0]
+		});
+		self.config = defaultTask.task;
 
 		//Check to see if the URL contains a URL path.
 		const queryString = window.location.search;
@@ -175,19 +209,9 @@ export class LabelerApp {
 			let taskUrl = urlParams.get('taskUrl');
 
 			if (taskUrl && taskUrl !== '') {
-				if (taskUrl.indexOf('%2F') > -1) {
-					//Assume URL is encoded, decode it.
-					taskUrl = decodeURIComponent(taskUrl);
-				}
-
-				fetch(taskUrl).then(x => {
-					return x.json();
-				}).then(fc => {
-					if (fc.features && fc.features.length > 0) {
-						self.config = fc.features[0];
-					}
-					self.#loadConfig();
-				});
+				self.#loadTaskUrl(taskUrl);
+			} else {
+				self.#loadConfig();
 			}
 		} else {
 			self.#loadConfig();
@@ -205,6 +229,124 @@ export class LabelerApp {
 		self.#updateOsmLinks();
 	}
 
+	#commitValidatedTask(validated) {
+		this.#pendingTaskLoadId = null;
+		if (this.#drawingManager) {
+			this.#saveSession();
+		}
+		this.config = validated.task;
+		this.#taskLoadId = validated.sourceId;
+		this.#taskBaseUrl = validated.destinations[0]?.resolvedUrl ?? window.location.href;
+		this.#loadConfig(true);
+	}
+
+	async #loadTaskUrl(taskUrl) {
+		const sourceId = `task-url:${crypto.randomUUID()}`;
+		this.#pendingTaskLoadId = sourceId;
+		try {
+			if (taskUrl.indexOf('%2F') > -1) {
+				taskUrl = decodeURIComponent(taskUrl);
+			}
+			const result = await loadValidatedTaskFromUrl(taskUrl, {
+				sourceId,
+				defaultTask: appSettings.defaultConfig.features[0],
+				pageUrl: window.location.href,
+				currentOrigin: window.location.origin,
+				reviewedOrigins: appSettings.reviewedTaskOrigins,
+				allowLocalhost: appSettings.allowLocalhostHttp,
+				fetchImpl: globalThis.fetch.bind(globalThis),
+				discloseTaskOrigin: decision => Promise.resolve(confirm(
+					`This task will be loaded from ${decision.origin}. Continue?`
+				)),
+				confirmPrivateDestination: decision => confirmPrivateDestination({
+					title: 'Load task from a private address?',
+					description: `The task URL points to ${decision.origin}. Only continue if you trust this private network destination.`,
+					acknowledgment: 'I understand this task will contact a private network address.',
+					action: 'Load task from private address',
+					cancel: 'Cancel task load'
+				})
+			});
+			if (this.#pendingTaskLoadId !== sourceId) {
+				return;
+			}
+			this.#commitValidatedTask(result.validated);
+		} catch (error) {
+			if (this.#pendingTaskLoadId !== sourceId) {
+				return;
+			}
+			this.#pendingTaskLoadId = null;
+			alert(error.message || 'Unable to load task URL.');
+			this.#loadConfig();
+		}
+	}
+
+	#getReviewedServiceOrigins(additional = []) {
+		const origins = new Set([
+			...(mapSettings.reviewedServiceOrigins ?? []),
+			...additional
+		]);
+		return [...origins];
+	}
+
+	async #approveServiceDestination(value, options = {}) {
+		const decisionOptions = {
+			workflow: 'service',
+			pageUrl: window.location.href,
+			taskUrl: this.#taskBaseUrl,
+			currentOrigin: window.location.origin,
+			reviewedOrigins: options.reviewedOrigins ?? this.#getReviewedServiceOrigins(),
+			allowLocalhost: mapSettings.allowLocalhostHttp === true,
+			requireTaskConsent: true,
+			allowedPlaceholders: options.allowedPlaceholders ?? [],
+			redirectPolicy: 'block-all'
+		};
+		let decision = createWorkflowDestinationDecision(value, decisionOptions);
+		if (decision.reason === 'private-address-approval-required') {
+			const approved = await confirmPrivateDestination({
+				title: `${options.operation} from a private address?`,
+				description: `${options.operation} will contact ${decision.origin}. Only continue if you trust this private network destination.`,
+				acknowledgment: 'I understand this operation will contact a private network address.',
+				action: `Continue ${options.operation.toLowerCase()}`,
+				cancel: 'Cancel'
+			});
+			if (!approved) {
+				throw new Error(`${options.operation} was cancelled.`);
+			}
+			decision = createWorkflowDestinationDecision(value, {
+				...decisionOptions,
+				consent: 'private-explicitly-approved'
+			});
+		} else if (decision.reason === 'task-origin-approval-required') {
+			if (!confirm(`${options.operation} will contact ${decision.origin}. Continue?`)) {
+				throw new Error(`${options.operation} was cancelled.`);
+			}
+			decision = createWorkflowDestinationDecision(value, {
+				...decisionOptions,
+				consent: 'task-load-approved'
+			});
+		}
+		return requireAllowedDestination(decision);
+	}
+
+	async #createExpandedServiceDestination(template, expandedValue, options = {}) {
+		const templateDecision = await this.#approveServiceDestination(template, options);
+		const destinationDecision = requireAllowedDestination(validateExpandedDestination(
+			templateDecision,
+			expandedValue,
+			{
+				baseUrl: this.#taskBaseUrl,
+				currentOrigin: window.location.origin,
+				reviewedOrigins: options.reviewedOrigins ?? this.#getReviewedServiceOrigins(),
+				allowLocalhost: mapSettings.allowLocalhostHttp === true
+			}
+		));
+		return {
+			templateDecision,
+			destinationDecision,
+			requestUrl: destinationDecision.resolvedUrl
+		};
+	}
+
 	///////////////////////////
 	// Flyout panel functions
 	//////////////////////////
@@ -217,20 +359,16 @@ export class LabelerApp {
 		const loadLocalTaskFile = document.getElementById('loadLocalTaskFile');
 		loadLocalTaskFile.onchange = (e) => {
 			if (e.target.files && e.target.files.length > 0) {
-				//Ensure it meets our config file schema.
-				e.target.files[0].text().then(data => {
+				const file = e.target.files[0];
+				file.text().then(data => {
 					try {
-						let fc = JSON.parse(data);
-						if (fc && fc.type === 'FeatureCollection' && fc.features && fc.features.length > 0) {
-
-							const defaultProps = Object.assign({}, appSettings.defaultConfig.features[0].properties);
-							fc.features[0].properties = Object.assign(defaultProps, fc.features[0].properties);
-							self.config = fc.features[0];
-
-							self.#loadConfig();
-						}
-					} catch (e) {
-						alert('Unable to load task file.');
+						const validated = validateLabelerTask(JSON.parse(data), {
+							sourceId: `local-task:${file.name}`,
+							defaultTask: appSettings.defaultConfig.features[0]
+						});
+						self.#commitValidatedTask(validated);
+					} catch (error) {
+						alert(error.message || 'Unable to load task file.');
 					}
 				});
 
@@ -256,22 +394,7 @@ export class LabelerApp {
 				const source = { source: `LocalFile|${file.name}` };
 
 				if (file.name.toLowerCase().indexOf('.geojsonl') > -1) {
-					//Parse as GeoJSONL
-					e.target.files[0].text().then(data => {
-						try {
-							const features = [];
-							const lines = data.split('\n');
-							for (let i = 0, len = lines.length; i < len; i++) {
-								try {
-									features.push(JSON.parse(lines[i]));
-								} catch { }
-							}
-
-							self.#importFeatures(r.features, source, true, true);
-						} catch (e) {
-							alert('Unable to load data file.');
-						}
-					});
+					self.#startGeoJsonlImport(file, source);
 				} else {
 					//Try parsing the file using the Sptial IO module (GeoJSON, GeoRSS, GML, GPX, KML, KMZ, spatial CSV/Tab/Pipe).
 					e.target.files[0].arrayBuffer().then(data => {
@@ -306,6 +429,16 @@ export class LabelerApp {
 			self.flyout.hide();
 		};
 
+		document.getElementById('geoJsonlImportPause').onclick = () => {
+			self.#geoJsonlImportOperation?.pause();
+		};
+		document.getElementById('geoJsonlImportResume').onclick = () => {
+			self.#geoJsonlImportOperation?.resume();
+		};
+		document.getElementById('geoJsonlImportCancel').onclick = () => {
+			self.#geoJsonlImportOperation?.cancel();
+		};
+
 		//Click event for loading data using the OSM wizard. 
 		document.getElementById('loadOsmWizard').onclick = () => {
 			self.#popup.close();
@@ -330,54 +463,198 @@ export class LabelerApp {
 		}
 
 		//Handle custom data importer
-		document.getElementById('customImportBtn').onclick = () => {
+		document.getElementById('customImportBtn').onclick = async () => {
 			const server = self.config.properties.customDataService;
 
 			if (server && server !== '') {
-				self.#idleDrawing();
+				try {
+					self.#idleDrawing();
+					self.#classControl.completeBulkEdit();
 
-				//Complete the bulk edit phase.
-				self.#classControl.completeBulkEdit();
+					const map = self.map;
+					const cam = map.getCamera();
+					let bbox = cam.bounds;
+					const areaOfInterest = self.config.geometry;
 
-				//get query values -> show loading screen -> run query in worker -> if success, load data and close flyout. if error, prompt user, leave flyout open.	
+					if (areaOfInterest && areaOfInterest.type) {
+						bbox = atlas.data.BoundingBox.fromData(areaOfInterest);
+					} else if (cam.zoom < 12) {
+						alert('Zoom in more.');
+						return;
+					}
 
-				let cdWorker = self.#cdWorker;
-				if (!cdWorker) {
-					cdWorker = new Worker('workers/CustomDataWorker.js');
-					cdWorker.onmessage = self.#customImportResponded;
-					self.#cdWorker = cdWorker;
+					const dt = self.config.properties.drawing_type;
+					self.#customDataRequest = {
+						server,
+						bbox,
+						aoi: areaOfInterest,
+						existingGeoms: self.#getSourceData(true).features,
+						allowLines: dt === 'lines' || dt === 'all',
+						allowPolygons: dt === 'polygons' || dt === 'all',
+						boundaries: appSettings.customDataBoundaries ?? {},
+						originalSessionId: crypto.randomUUID(),
+						retryUsed: false
+					};
+					await self.#dispatchCustomDataRequest();
+					cancelImportBtn.focus();
+				} catch (error) {
+					document.getElementById('customImportLoadingScreen').style.display = 'none';
+					self.#customDataRequest = null;
+					alert(error.message || 'Unable to start the custom data import.');
 				}
-
-				const map = self.map;
-				const cam = map.getCamera();
-				let bbox = cam.bounds;
-
-				const areaOfInterest = self.config.geometry;
-
-				if (areaOfInterest && areaOfInterest.type) {
-					bbox = atlas.data.BoundingBox.fromData(areaOfInterest);
-				} else if (cam.zoom < 12) {
-					alert('Zoom in more.');
-					return;
-				}
-
-				document.getElementById('customImportLoadingScreen').style.display = '';
-
-				const dt = self.config.properties.drawing_type;
-
-				//Use worker to filter data more using geospatial analysis.
-				cdWorker.postMessage({
-					server: server,
-					bbox: bbox,
-					aoi: areaOfInterest,
-					existingGeoms: self.#getSourceData(true).features,
-					allowLines: dt === 'lines' || dt === 'all',
-					allowPolygons: dt === 'polygons' || dt === 'all'
-				});
-
-				cancelImportBtn.focus();
 			}
 		};
+	}
+
+	async #dispatchCustomDataRequest(overrideAttempt = null) {
+		const state = this.#customDataRequest;
+		if (!state) {
+			throw new Error('No custom data request is available.');
+		}
+		const expanded = state.server.replace('{bbox}', state.bbox.join(','));
+		const destination = await this.#createExpandedServiceDestination(
+			state.server,
+			expanded,
+			{
+				operation: 'Custom data import',
+				allowedPlaceholders: ['bbox']
+			}
+		);
+
+		if (overrideAttempt) {
+			overrideAttempt.markUsed();
+		}
+		let worker = this.#cdWorker;
+		if (!worker) {
+			worker = new Worker('workers/CustomDataWorker.js');
+			worker.onmessage = this.#customImportResponded;
+			this.#cdWorker = worker;
+		}
+
+		this.#customDataRequestId = crypto.randomUUID();
+		document.getElementById('customImportLoadingScreen').style.display = '';
+		worker.postMessage({
+			requestId: this.#customDataRequestId,
+			...state,
+			...destination,
+			overrideCapacity: overrideAttempt?.used === true,
+			capacityOverride: overrideAttempt ? {
+				id: overrideAttempt.id,
+				used: overrideAttempt.used
+			} : null,
+			conditionalIdentity: overrideAttempt?.conditionalIdentity ?? null
+		});
+	}
+
+	async #handleCustomDataCapacity(message) {
+		const state = this.#customDataRequest;
+		if (!state || state.retryUsed) {
+			document.getElementById('customImportLoadingScreen').style.display = 'none';
+			alert('The custom data service exceeded the processing boundary.');
+			return;
+		}
+		state.retryUsed = true;
+		const source = createUntrustedSource({
+			id: `custom-data-${crypto.randomUUID()}`,
+			kind: 'custom-data',
+			displayName: this.config.properties.customDataServiceLabel || 'Custom data import',
+			format: 'GeoJSON',
+			foreground: true,
+			automatic: false,
+			destinationDecisionId: message.requestId,
+			conditionalIdentity: message.conditionalIdentity
+		});
+		const attempt = createCapacityOverrideAttempt({
+			id: `custom-data-override-${crypto.randomUUID()}`,
+			sourceId: source.id,
+			originalSessionId: state.originalSessionId,
+			dimension: message.dimension,
+			observedValue: message.observed,
+			supportedValue: message.supported,
+			conditionalIdentity: message.conditionalIdentity
+		});
+		const approved = await confirmCapacityOverride({
+			attempt,
+			source,
+			acknowledge: () => attempt.acknowledge(),
+			warning: message.conditionalIdentity
+				? 'The retry will require the service to return the same identified content.'
+				: 'The service supplied no ETag or Last-Modified value, so the remote content may have changed before the retry.'
+		});
+		if (!approved || !attempt.acknowledged) {
+			document.getElementById('customImportLoadingScreen').style.display = 'none';
+			this.#customDataRequest = null;
+			return;
+		}
+
+		try {
+			await this.#dispatchCustomDataRequest(attempt);
+		} catch (error) {
+			document.getElementById('customImportLoadingScreen').style.display = 'none';
+			this.#customDataRequest = null;
+			alert(error.message || 'Unable to retry the custom data import.');
+		}
+	}
+
+	#setGeoJsonlImportStatus(message, visible = true) {
+		const container = document.getElementById('geoJsonlImportStatus');
+		container.hidden = !visible;
+		document.getElementById('geoJsonlImportMessage').textContent = message;
+	}
+
+	#startGeoJsonlImport(file, source) {
+		const self = this;
+		self.#geoJsonlImportOperation?.cancel();
+		self.#setGeoJsonlImportStatus(`Reading ${file.name}...`);
+
+		const operation = startGeoJsonlIntake(file, {
+			mode: 'labeler',
+			sourceId: source.source,
+			onMessage: message => {
+				if (self.#geoJsonlImportOperation?.requestId !== message.requestId) {
+					return;
+				}
+				if (message.type === 'progress') {
+					self.#setGeoJsonlImportStatus(
+						`Read ${message.bytesRead.toLocaleString()} of ${message.knownTotalBytes.toLocaleString()} bytes; ${message.recordsSeen} records checked.`
+					);
+				} else if (message.type === 'paused') {
+					self.#setGeoJsonlImportStatus(`Paused after ${message.checkpoint.recordsSeen} records.`);
+				} else if (message.type === 'resumed') {
+					self.#setGeoJsonlImportStatus('GeoJSONL import resumed.');
+				}
+			}
+		});
+		self.#geoJsonlImportOperation = operation;
+
+		operation.completion.then(message => {
+			if (self.#geoJsonlImportOperation?.requestId !== operation.requestId
+				|| !isMatchingReadyResult(operation, message)) {
+				return;
+			}
+
+			const { invalidCount, invalidSamples, validCount } = message.summary;
+			if (!confirmPartialGeoJsonlImport({ invalidCount, invalidSamples, validCount })) {
+				self.#setGeoJsonlImportStatus('Partial GeoJSONL import was not confirmed.');
+				return;
+			}
+
+			self.#importFeatures(message.stagedResult.payload, source, true, true);
+			self.#setGeoJsonlImportStatus(
+				`Imported ${validCount} valid Feature records${invalidCount > 0 ? `; ${invalidCount} invalid records were skipped after confirmation.` : '.'}`
+			);
+		}).catch(error => {
+			if (self.#geoJsonlImportOperation?.requestId !== operation.requestId
+				|| error.result?.type === 'cancelled') {
+				return;
+			}
+			self.#setGeoJsonlImportStatus('GeoJSONL import failed.');
+			alert(error.message);
+		}).finally(() => {
+			if (self.#geoJsonlImportOperation?.requestId === operation.requestId) {
+				self.#geoJsonlImportOperation = null;
+			}
+		});
 	}
 
 	/*
@@ -385,18 +662,39 @@ export class LabelerApp {
 	 * @param {*} e Worker response object. `e.data` is either a feature collection, or an object with an error property.
 	 */
 	#customImportResponded = (e) => {
+		if (e.data.requestId && e.data.requestId !== this.#customDataRequestId) {
+			return;
+		}
+		if (e.data.type === 'progress') {
+			return;
+		}
+		if (e.data.type === 'capacityExceeded') {
+			this.#handleCustomDataCapacity(e.data).catch(error => {
+				document.getElementById('customImportLoadingScreen').style.display = 'none';
+				this.#customDataRequest = null;
+				alert(error.message || 'Unable to prepare the custom data retry.');
+			});
+			return;
+		}
+		if (e.data.type === 'cancelled') {
+			document.getElementById('customImportLoadingScreen').style.display = 'none';
+			this.#customDataRequest = null;
+			return;
+		}
 		document.getElementById('customImportLoadingScreen').style.display = 'none';
 
 		//If there is an error, alert the user and do nothing else.
-		if (e.data.error) {
-			alert(e.data.error);
+		if (e.data.error || e.data.type === 'failed') {
+			this.#customDataRequest = null;
+			alert(e.data.error || 'Unable to import custom data.');
 			return;
 		}
 
 		//Import the features. No need to filter as that was done in the worker. 
-		this.#importFeatures(e.data, {
+		this.#importFeatures(e.data.data ?? e.data, {
 			source: 'CustomDataImport'
 		}, false, true);
+		this.#customDataRequest = null;
 	}
 
 	/**
@@ -405,9 +703,12 @@ export class LabelerApp {
 	#cancelDataImport = () => {
 		const self = this;
 		if (self.#cdWorker) {
-			self.#cdWorker.terminate();
-			self.#cdWorker = null;
+			self.#cdWorker.postMessage({
+				type: 'cancel',
+				requestId: self.#customDataRequestId
+			});
 			document.getElementById('customImportLoadingScreen').style.display = 'none';
+			self.#customDataRequest = null;
 		}
 	}
 
@@ -419,6 +720,8 @@ export class LabelerApp {
 		const layerSettings = document.querySelectorAll('#layersCard input[type="range"]');
 		layerSettings.forEach(input => {
 			input.oninput = () => {
+				input.nextElementSibling.value = input.value;
+
 				//Capture the updated layer option (contrast/saturation/hur rotation).
 				self.#layerOptions[input.id] = parseFloat(input.value);
 
@@ -1378,7 +1681,7 @@ export class LabelerApp {
 	//////////////////////////
 
 	/** Loads a configuration file and alters the settings of the labeler. */
-	#loadConfig() {
+	#loadConfig(skipCurrentSessionSave = false) {
 		const self = this;
 
 		//Clear the basemap layers list from the current session.
@@ -1406,14 +1709,16 @@ export class LabelerApp {
 			self.#idleDrawing();
 
 			//Save the current session.
-			self.#saveSession();
+			if (!skipCurrentSessionSave) {
+				self.#saveSession();
+			}
 
 			//Remove all data that's in the feature source.
 			self.#featureSource.clear();
 		}
 
 		if (cp) {
-			document.querySelector('#appTitle').innerHTML = cp.project_name || '';
+			setText(document.querySelector('#appTitle'), cp.project_name);
 
 			self.map.events.add('ready', () => {
 				self.#drawingManager.getOptions().toolbar.setOptions({
@@ -1435,8 +1740,9 @@ export class LabelerApp {
 			});
 
 			const instructions = cp.instructions || dc.features[0].properties.instructions || '';
-
-			document.getElementById('instructions').innerHTML = marked.parse(instructions);
+			const instructionsEl = document.getElementById('instructions');
+			const rendered = renderSafeMarkdown(instructions);
+			renderInstruction(instructionsEl, rendered);
 			if (cp.instructions_on_load) {
 				self.navbar.setSelectedItem('Instructions');
 			}
@@ -1652,54 +1958,68 @@ export class LabelerApp {
 		cancelWizardBtn.onclick = self.#cancelWizard;
 
 		const importBtn = document.querySelector('#importWizard button');
-		importBtn.onclick = () => {
-			self.#idleDrawing();
+		importBtn.onclick = async () => {
+			try {
+				self.#idleDrawing();
+				self.#classControl.completeBulkEdit();
 
-			//Complete the bulk edit phase.
-			self.#classControl.completeBulkEdit();
+				const map = self.map;
+				const cam = map.getCamera();
+				let bbox = cam.bounds;
+				const areaOfInterest = self.config.geometry;
 
-			//get query values -> show loading screen -> run query in worker -> if success, load data and close flyout. if error, prompt user, leave flyout open.	
+				if (areaOfInterest && areaOfInterest.type) {
+					bbox = atlas.data.BoundingBox.fromData(areaOfInterest);
+				} else if (cam.zoom < 12) {
+					alert('Zoom in more.');
+					return;
+				}
 
-			let osmWizardWorker = self.#osmWizardWorker;
-			if (!osmWizardWorker) {
-				osmWizardWorker = new Worker('workers/OsmSearchWorker.js');
-				osmWizardWorker.onmessage = self.#wizardResponded;
-				self.#osmWizardWorker = osmWizardWorker;
+				const server = Utils.getSelectValue(osmServerElm);
+				const query = document.querySelector('#importWizard textarea').value;
+				const normalizedServer = server.endsWith('/') ? server : `${server}/`;
+				const requestUrl = new URL('interpreter', normalizedServer).href;
+				const reviewedOrigins = self.#getReviewedServiceOrigins(
+					(appSettings.overpassServers ?? []).map(value => new URL(value).origin)
+				);
+				const destination = await self.#createExpandedServiceDestination(
+					requestUrl,
+					requestUrl,
+					{
+						operation: 'OSM search',
+						reviewedOrigins
+					}
+				);
+
+				let osmWizardWorker = self.#osmWizardWorker;
+				if (!osmWizardWorker) {
+					osmWizardWorker = new Worker('workers/OsmSearchWorker.js');
+					osmWizardWorker.onmessage = self.#wizardResponded;
+					self.#osmWizardWorker = osmWizardWorker;
+				}
+
+				document.getElementById('osmLoadingScreen').style.display = '';
+				const dt = self.config.properties.drawing_type;
+				self.#osmWizardRequestId = crypto.randomUUID();
+				osmWizardWorker.postMessage({
+					requestId: self.#osmWizardRequestId,
+					...destination,
+					query,
+					center: Math.round(cam.center),
+					bbox,
+					aoi: areaOfInterest,
+					existingGeoms: self.#getSourceData(true).features,
+					allowLines: dt === 'lines' || dt === 'all',
+					allowPolygons: dt === 'polygons' || dt === 'all',
+					overrideCapacity: false,
+					capacityOverride: null
+				});
+
+				cancelWizardBtn.focus();
+			} catch (error) {
+				document.getElementById('osmLoadingScreen').style.display = 'none';
+				alert(error.message || 'Unable to start the OSM search.');
 			}
-
-			const map = self.map;
-			const cam = map.getCamera();
-			let bbox = cam.bounds;
-
-			const areaOfInterest = self.config.geometry;
-
-			if (areaOfInterest && areaOfInterest.type) {
-				bbox = atlas.data.BoundingBox.fromData(areaOfInterest);
-			} else if (cam.zoom < 12) {
-				alert('Zoom in more.');
-				return;
-			}
-
-			const server = Utils.getSelectValue(osmServerElm);
-			const query = document.querySelector('#importWizard textarea').value;
-
-			document.getElementById('osmLoadingScreen').style.display = '';
-
-			const dt = self.config.properties.drawing_type;
-
-			//Use worker to filter data more using geospatial analysis.
-			osmWizardWorker.postMessage({
-				server: server,
-				query: query,
-				center: Math.round(cam.center),
-				bbox: bbox,
-				aoi: areaOfInterest,
-				existingGeoms: self.#getSourceData(true).features,
-				allowLines: dt === 'lines' || dt === 'all',
-				allowPolygons: dt === 'polygons' || dt === 'all'
-			});
-
-			cancelWizardBtn.focus();
 		};
 	}
 
@@ -1708,16 +2028,26 @@ export class LabelerApp {
 	 * @param {*} e Worker response object. `e.data` is either a feature collection, or an object with an error property.
 	 */
 	#wizardResponded = (e) => {
+		if (e.data.requestId && e.data.requestId !== this.#osmWizardRequestId) {
+			return;
+		}
+		if (e.data.type === 'progress') {
+			return;
+		}
+		if (e.data.type === 'cancelled') {
+			document.getElementById('osmLoadingScreen').style.display = 'none';
+			return;
+		}
 		document.getElementById('osmLoadingScreen').style.display = 'none';
 
 		//If there is an error, alert the user and do nothing else.
-		if (e.data.error) {
-			alert(e.data.error);
+		if (e.data.error || e.data.type === 'failed') {
+			alert(e.data.error || 'Unable to import OSM data.');
 			return;
 		}
 
 		//Import the features. No need to filter as that was done in the worker. 
-		this.#importFeatures(e.data, {
+		this.#importFeatures(e.data.data ?? e.data, {
 			source: 'OSMOverpass'
 		}, false, true);
 	}
@@ -1728,8 +2058,10 @@ export class LabelerApp {
 	#cancelWizard = () => {
 		const self = this;
 		if (self.#osmWizardWorker) {
-			self.#osmWizardWorker.terminate();
-			self.#osmWizardWorker = null;
+			self.#osmWizardWorker.postMessage({
+				type: 'cancel',
+				requestId: self.#osmWizardRequestId
+			});
 			document.getElementById('osmLoadingScreen').style.display = 'none';
 		}
 	}
@@ -1873,13 +2205,19 @@ export class LabelerApp {
 			await self.#storage.iterate((value, key) => {
 				//Check to see if there is cached data for the named project.
 				if (key === self.config.properties.name) {
-					//Check to see if the user wants to recover it. 
-					if (value && confirm('Found cached data for this project task. Continue from where you left off?')) {
-						self.#featureSource.setShapes(value.data);
-						self.#calcStats();
-					} else {
-						//If not, clear the cached data.
+					try {
+						const validated = validateLabelerAutosave(value, self.config, {
+							sourceId: `autosave:${self.#taskLoadId ?? self.config.properties.name}`
+						});
+						if (confirm('Found cached data for this project task. Continue from where you left off?')) {
+							self.#featureSource.setShapes(validated.data);
+							self.#calcStats();
+						} else {
+							self.#removeExpireData(key).then();
+						}
+					} catch (error) {
 						self.#removeExpireData(key).then();
+						alert(error.message || 'Cached task data could not be recovered.');
 					}
 				} else if (value.date < expiryDate) {
 					//Check other cached data to see if it's older than the expiry date. If so, remove it.					

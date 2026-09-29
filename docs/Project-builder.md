@@ -143,6 +143,12 @@ The output of the project builder is a zip file with following structure:
 
 See the [Result file format](#result-file-format) documentation for more details on the output data schema of the labeler tool.
 
+Existing version 2 project archives remain supported. Archive paths, settings, tasks, results, and complete geometry structures are validated before any project state is replaced, and a failed or cancelled load leaves the current project unchanged. Archives that reference an unreviewed HTTPS origin disclose that origin and require approval before the project is committed or its layers are rendered.
+
+Generated task and custom-service URLs should use their final HTTPS destinations. Remote plaintext HTTP and redirects are intentionally rejected. Relative task and layer URLs continue to resolve against their documented project or task location; opening the tools directly with `file://` remains browser-dependent and is best effort.
+
+Large GeoJSONL and project-archive inputs are decoded and validated incrementally in dedicated workers so parsing and geometry preparation do not block the main interface. The import UI reports progress and supports best-effort cancellation; validated data is staged and replaces the current area, grid, or project only after renderer preparation succeeds. Resource counters support diagnostics and deployment-specific testing, but the application does not claim a universal safe input size or device-memory baseline. No operation-specific production cutoff is enabled by default; worker isolation, incremental processing, validation, and transactional commit are the selected controls.
+
 ### Task file format
 
 The individual task files are GeoJSON files that each contain a feature collection with a single feature. 
@@ -155,7 +161,7 @@ The individual task files are GeoJSON files that each contain a feature collecti
 |--|--|--|
 | `project_name` | `string` | The name of the project. |
 | `name` | `string` | The same as the id of the Feature. |
-| `instructions` | `string` | Instructions provided by the admin creating the project. <br/><br/>Usually, will be unique to the task at hand. For example: “capture building footprints”.  <br/><br/> May contain HTML. |
+| `instructions` | `string` | Instructions provided by the admin creating the project. <br/><br/>Usually, will be unique to the task at hand. For example: “capture building footprints”. Supported Markdown formatting is sanitized before display; arbitrary HTML is not preserved. |
 | `instructions_on_load` | `boolean` | Indicates if the instructions panel will open to show users the instructions when the config file is loaded. |
 | `allow_wizard` | `boolean` | Indicates if the user can use the OSM Overpass wizard. <br/><br/>If set to false, hide this feature. |
 | `customDataService` | `string` | The display name that the user sees for a button that imports data from a custom data service. |

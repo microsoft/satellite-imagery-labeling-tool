@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'self'; script-src 'self' https://atlas.microsoft.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://atlas.microsoft.com; font-src 'self' https://atlas.microsoft.com; img-src 'self' data: blob: https:; connect-src 'self' https:; object-src 'none'; frame-src 'none'; form-action 'self'"/>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="shortcut icon" href="./assets/earth.ico"/>
+	<link rel="stylesheet" href="libs/material-symbols/outlined.css"/>
     
 	<title>Spatial imagery labeling project viewer</title>
 
 	<!-- Add Azure Maps CSS files. -->
 	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css"/>
 	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.css" />
-
-	<!-- Add fonts CSS files. -->
-	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&v=1656088853827">
 
 	<!-- Add App CSS files. -->
 	<link rel="stylesheet" href="css/themes/indigo.css"/>
@@ -62,12 +61,9 @@
 	<!-- Add 3rd party libraries libraries -->
 	<script src="libs/azure-maps-image-exporter.min.js"></script>  
 	<script src="libs/marked.min.js"></script>
+	<script src="libs/purify.min.js"></script>
     <script src="libs/jszip.min.js"></script>
 
-	<!-- Load the app module. -->
-	<script type="module">
-        import { ProjectViewerApp } from './modules/projectViewer.js';
-		window.app = new ProjectViewerApp();
-	</script>
+	<script type="module" src="modules/projectViewerBootstrap.js"></script>
 </body>
 </html>

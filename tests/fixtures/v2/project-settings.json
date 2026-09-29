@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "example-project",
+      "properties": {
+        "project_name": "Example project",
+        "instructions": "Draw the visible area.",
+        "drawing_type": "polygons",
+        "layers": {},
+        "primary_classes": {
+          "display_name": "Class",
+          "property_name": "class",
+          "names": ["building"],
+          "colors": ["#0067b8"]
+        },
+        "secondary_classes": {
+          "display_name": "Condition",
+          "property_name": "condition",
+          "names": []
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]
+      }
+    }
+  ]
+}

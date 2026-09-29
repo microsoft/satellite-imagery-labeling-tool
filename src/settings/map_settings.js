@@ -21,5 +21,14 @@ export let mapSettings = {
 	},
 
     //A URL to a CORs enabled proxy service that can be leveraged for cross domain requests. Cross domain URL would be appended to this proxy service URL. 
-    proxyService: undefined
+    proxyService: undefined,
+
+    // Destinations maintained by the deployment and allowed without per-task consent.
+    reviewedServiceOrigins: [
+        'https://atlas.microsoft.com'
+    ],
+
+    // Plaintext traffic is limited to an explicitly enabled local development deployment.
+    allowLocalhostHttp: false,
+    proxyRedirectPolicy: 'validate-each-hop'
 };

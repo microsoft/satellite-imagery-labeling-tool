@@ -1,180 +1,396 @@
-import { appSettings } from '../settings/project_admin_settings.js'
+import { appSettings } from '../settings/project_admin_settings.js';
+import { mapSettings } from '../settings/map_settings.js';
+import {
+    IntakeSession,
+    createCapacityOverrideAttempt,
+    createIntakeDiagnostic,
+    createStagedResult,
+    createUntrustedSource
+} from './intakeSession.js';
+import {
+    createWorkflowDestinationDecision,
+    requireAllowedDestination
+} from './remoteDestination.js';
+import { SchemaValidationError, validateProject } from './schemaValidation.js';
 
-export class ProjectUtils {
-    static async readProjectFile(fileBlob, readResults) {
-        const project = {
-            aoi: null,
-            bbox: null,
-            tasks: [],
-            results: [],
-            stats: {
-                resultsNoTasks: 0,
-                tasksNoResults: 0,
-                largestLabeledTask: 0,
-                primary: {},
-                secondary: {}
-            },
-            colors: {
-                primary: [],
-                secondary: []
+const TILE_PLACEHOLDERS = [
+    'x', 'y', 'z', 'quadkey', 'bbox', 'bbox-epsg-3857', 'subdomain', 'azMapsDomain'
+];
+
+function isEmbeddedImage(value) {
+    return /^data:image\/(?:png|jpeg);base64,[a-z0-9+/=\s]+$/i.test(value);
+}
+
+function validateDestination(value, path, options, allowedPlaceholders = []) {
+    if (isEmbeddedImage(value)) {
+        return Object.freeze({
+            originalValue: value,
+            resolvedUrl: value,
+            scheme: 'data',
+            origin: '',
+            addressClass: 'not-applicable',
+            originClass: 'same-origin',
+            consent: 'not-required',
+            status: 'allowed',
+            reason: null,
+            embedded: true
+        });
+    }
+
+    const decisionOptions = {
+        workflow: 'project',
+        pageUrl: options.pageUrl,
+        projectUrl: options.projectUrl ?? options.pageUrl,
+        currentOrigin: options.currentOrigin,
+        reviewedOrigins: options.reviewedOrigins,
+        allowLocalhost: options.allowLocalhost,
+        requireTaskConsent: true,
+        allowedPlaceholders
+    };
+    let decision = createWorkflowDestinationDecision(value, decisionOptions);
+    if (decision.reason === 'task-origin-approval-required'
+        && options.approvedOrigins?.has(decision.origin)) {
+        decision = createWorkflowDestinationDecision(value, {
+            ...decisionOptions,
+            consent: 'task-load-approved'
+        });
+    } else if (decision.reason === 'private-address-approval-required'
+        && options.privateApprovedOrigins?.has(decision.origin)) {
+        decision = createWorkflowDestinationDecision(value, {
+            ...decisionOptions,
+            consent: 'private-explicitly-approved'
+        });
+    }
+    try {
+        return requireAllowedDestination(decision);
+    } catch {
+        const error = new SchemaValidationError(
+            `${path} is not an allowed destination.`,
+            decision.reason ?? 'blocked-destination',
+            path
+        );
+        error.destinationDecision = decision;
+        throw error;
+    }
+}
+
+export function validateProjectForUse(project, options = {}) {
+    const sourceId = project?.sourceId ?? options.sourceId ?? 'project';
+    const validated = validateProject({
+        settings: project?.settings,
+        tasks: project?.tasks,
+        results: project?.results ?? []
+    }, { sourceId });
+    const pageUrl = options.pageUrl ?? globalThis.location?.href;
+    if (!pageUrl) {
+        throw new TypeError('Project destination validation requires a page URL.');
+    }
+    const destinationOptions = {
+        pageUrl,
+        projectUrl: options.projectUrl,
+        currentOrigin: options.currentOrigin ?? new URL(pageUrl).origin,
+        reviewedOrigins: options.reviewedOrigins ?? mapSettings.reviewedServiceOrigins,
+        allowLocalhost: options.allowLocalhost ?? mapSettings.allowLocalhostHttp,
+        approvedOrigins: new Set(options.approvedOrigins ?? []),
+        privateApprovedOrigins: new Set(options.privateApprovedOrigins ?? [])
+    };
+    const decisions = [];
+    const properties = validated.settings.features[0].properties;
+    for (const [name, layer] of Object.entries(properties.layers)) {
+        const field = layer.type === 'TileLayer' ? 'tileUrl' : 'url';
+        decisions.push(validateDestination(
+            layer[field],
+            `$.settings.features[0].properties.layers.${name}.${field}`,
+            destinationOptions,
+            layer.type === 'TileLayer' ? TILE_PLACEHOLDERS : []
+        ));
+    }
+    if (properties.customDataService) {
+        decisions.push(validateDestination(
+            properties.customDataService,
+            '$.settings.features[0].properties.customDataService',
+            destinationOptions,
+            ['bbox']
+        ));
+    }
+
+    return Object.freeze({
+        ...structuredClone(project),
+        settings: validated.settings,
+        tasks: validated.tasks,
+        results: validated.results,
+        sourceId,
+        destinationDecisions: Object.freeze(decisions)
+    });
+}
+
+async function validateProjectWithApprovals(project, options) {
+    const approvedOrigins = new Set(options.approvedOrigins ?? []);
+    const privateApprovedOrigins = new Set(options.privateApprovedOrigins ?? []);
+    while (true) {
+        try {
+            return validateProjectForUse(project, {
+                ...options,
+                approvedOrigins,
+                privateApprovedOrigins
+            });
+        } catch (error) {
+            const decision = error.destinationDecision;
+            let approved = false;
+            if (decision?.reason === 'task-origin-approval-required') {
+                approved = await options.confirmDestinationOrigin?.(decision) === true;
+                if (approved) {
+                    approvedOrigins.add(decision.origin);
+                }
+            } else if (decision?.reason === 'private-address-approval-required') {
+                approved = await options.confirmPrivateDestination?.(decision) === true;
+                if (approved) {
+                    privateApprovedOrigins.add(decision.origin);
+                }
+            } else {
+                throw error;
             }
+            if (!approved) {
+                throw error;
+            }
+        }
+    }
+}
+
+function uniqueId(prefix) {
+    return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
+}
+
+function normalizeArguments(readResults, options) {
+    if (readResults && typeof readResults === 'object') {
+        return { readResults: readResults.readResults === true, options: readResults };
+    }
+    return { readResults: readResults === true, options: options ?? {} };
+}
+
+function runWorker(fileBlob, readResults, options, session, overrideAttempt = null) {
+    return new Promise((resolve, reject) => {
+        const worker = new Worker(
+            new URL('../workers/ArchiveIntakeWorker.js', import.meta.url)
+        );
+        const requestId = session.requestId;
+        let settled = false;
+
+        const finish = (callback, value) => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            worker.terminate();
+            callback(value);
         };
 
-        //Quick lookup index for task area name to their array index in the cells.
-        const taskIdxMap = {};
-
-        const settingsFileName = 'project_builder_settings.json';
-
-        const zip = await JSZip.loadAsync(fileBlob);
-
-        let settings = zip.file(settingsFileName);
-        let rootFolder = '';
-
-        const zipFileNames = Object.keys(zip.files);
-
-        //Zip possibly has nested folder.
-        if (settings === null) {
-            zipFileNames.forEach(f => {
-                if (f.indexOf(settingsFileName) > 0 && !f.startsWith('__MACOSX')) {
-                    rootFolder = f.substring(0, f.lastIndexOf('/')) + '/';
-                    settings = zip.file(rootFolder + settingsFileName);
-                }
-            });
-        }
-
-        if (settings === null) {
-            alert('Unable to load project.');
-            return;
-        }
-
-        const config = JSON.parse(await settings.async('string'));
-
-        //Load the area of interest into the drawing manager.
-        project.aoi = config.features[0];
-        project.bbox = (project.aoi.bbox) ? project.aoi.bbox : atlas.data.BoundingBox.fromData(project.aoi);
-
-        //Load the tasks grid cells.
-        let taskFolderPath = rootFolder + 'tasks/';
-
-        for (let i = 0; i < zipFileNames.length; i++) {
-            const t = zipFileNames[i];
-            if (t.startsWith(taskFolderPath) && !t.endsWith('/') && !t.startsWith('__MACOSX') && (t.endsWith('.json') || t.endsWith('.geojson'))) {
-                const task = JSON.parse(await zip.file(t).async('string'));
-                taskIdxMap[task.features[0].properties.name] = project.tasks.length;
-                project.tasks.push(task.features[0]);
+        worker.onmessage = async event => {
+            const message = event.data ?? {};
+            if (message.requestId !== requestId) {
+                return;
             }
-        }
-
-        if (readResults) {
-            //Extract results and calculate stats.
-            let resultsFolderPath = rootFolder + 'results/';
-
-            for (let i = 0; i < zipFileNames.length; i++) {
-                const t = zipFileNames[i];
-                if (t.startsWith(resultsFolderPath) && !t.endsWith('/') && !t.startsWith('__MACOSX') && (t.endsWith('.json') || t.endsWith('.geojson'))) {
-                    console.log(t)
-                    const taskResult = JSON.parse(await zip.file(t).async('string'));
-
-                    if (taskResult.features.length > 0) {
-                        const idx = taskIdxMap[taskResult.features[0].properties.task_name];
-                        if (typeof idx === 'number') {
-                            const taskProps = project.tasks[idx].properties;
-                            const stats = {
-                                numEntities: taskResult.features.length,
-                                primary: {},
-                                secondary: {}
-                            };
-
-                            if (project.stats.largestLabeledTask < stats.numEntities) {
-                                project.stats.largestLabeledTask = stats.numEntities;
-                            }
-
-                            taskProps.stats = stats;
-
-                            for (let j = 0; j < taskResult.features.length; j++) {
-                                const f = taskResult.features[j];
-
-                                //Capture class stats.
-                                Object.keys(f.properties).forEach(k => {
-                                    let name = f.properties[k];
-                                    if (taskProps.primary_classes.names.indexOf(name) > -1) {
-                                        stats.primary[name] = stats.primary[name] + 1 || 1;
-                                    } else if (taskProps.secondary_classes && taskProps.secondary_classes.names && taskProps.secondary_classes.names.indexOf(name) > -1) {
-                                        stats.secondary[name] = stats.secondary[name] + 1 || 1;
-                                    }
-                                });
-                                project.results.push(f);
-                            }
-                        } else {
-                            project.stats.resultsNoTasks += taskResult.features.length;
-                        }
-                    }
-                }
-            }
-
-            project.tasks.forEach(c => {
-                const stats = project.stats;
-
-                if (!c.properties.stats || c.properties.stats.numEntities === 0) {
-                    stats.tasksNoResults++;
-                } else {
-                    //Capture class stats.
-                    c.properties.primary_classes.names.forEach(k => {
-                        const v = c.properties.stats.primary[k];
-                        stats.primary[k] = stats.primary[k] + v || v;
-                    });
-
-                    const sc = c.properties.secondary_classes;
-
-                    if (sc && sc.names) {
-                        sc.names.forEach(k => {
-                            const v = c.properties.stats.secondary[k];
-                            stats.secondary[k] = stats.secondary[k] + v || v;
-                        });
-                    }
-                }
-            });
-
-            //Generate color expressions for classes.
-            const primary = project.aoi.properties.primary_classes;
-            const secondary = project.aoi.properties.secondary_classes;
-
-            if (primary.colors.length > 0) {
-                //Create a match expression based on the primary classes property name.
-                const colorExp = ['match', ['get', primary.property_name]];
-
-                //Map the names to the colors.
-                for (let i = 0; i < primary.names.length; i++) {
-                    colorExp.push(primary.names[i], primary.colors[i]);
-                }
-
-                //Set default color to use when drawing.
-                colorExp.push('yellow');
-
-                project.colors.primary = colorExp;
-            }
-
-            if (secondary && secondary.names && secondary.names.length > 0) {
-                //Create a match expression based on the primary classes property name.
-                const colorExp = ['match', ['get', secondary.property_name]];
-
-                //Create a color pallete for secondary values. 
-                secondary.names.forEach((n, i) => {
-                    if (i < appSettings.colorPalette.length) {
-                        colorExp.push(n, appSettings.colorPalette[i]);
-                    } else {
-                        //Generate a random color.
-                        colorExp.push(n, "#000000".replace(/0/g, function () { return (~~(Math.random() * 16)).toString(16); }));
-                    }
+            if (message.type === 'progress') {
+                session.setPhase(requestId, message.phase === 'ready'
+                    ? 'preparing-render'
+                    : 'validating');
+                session.updateProgress(requestId, {
+                    bytesRead: message.counters?.actualExpandedBytes ?? 0,
+                    recordsSeen: message.counters?.entryCount ?? 0,
+                    validationOperations: message.counters?.validationWork ?? 0
                 });
-
-                //Set default color to use when drawing.
-                colorExp.push('yellow');
-
-                project.colors.secondary = colorExp;
+                options.onProgress?.(message);
+                return;
             }
+            if (message.type === 'capacityExceeded') {
+                session.setPhase(requestId, 'capacity-stopped');
+                session.addDiagnostic(requestId, createIntakeDiagnostic({
+                    category: 'capacity',
+                    reasonCode: 'capacity-exceeded',
+                    observedValue: message.observed,
+                    supportedValue: message.supported,
+                    capacityDimension: message.dimension
+                }));
+                finish(resolve, { type: 'capacityExceeded', message });
+                return;
+            }
+            if (message.type === 'cancelled') {
+                session.cancel(requestId);
+                finish(reject, new DOMException('Archive loading was cancelled.', 'AbortError'));
+                return;
+            }
+            if (message.type === 'failed') {
+                session.addDiagnostic(requestId, createIntakeDiagnostic({
+                    category: message.category ?? 'archive-integrity',
+                    reasonCode: message.reasonCode ?? 'archive-processing-failed',
+                    identifiers: message.entryPath ? [message.entryPath] : []
+                }));
+                session.discard(requestId, 'failed');
+                const error = new Error(message.error || 'Unable to load project archive.');
+                error.category = message.category;
+                error.reasonCode = message.reasonCode;
+                error.entryPath = message.entryPath;
+                error.retryEligible = false;
+                finish(reject, error);
+                return;
+            }
+            if (message.type === 'ready') {
+                try {
+                    const validatedProject = await validateProjectWithApprovals(message.stagedProject, {
+                        sourceId: session.sourceId,
+                        pageUrl: options.pageUrl,
+                        projectUrl: options.projectUrl,
+                        currentOrigin: options.currentOrigin,
+                        reviewedOrigins: options.reviewedOrigins,
+                        allowLocalhost: options.allowLocalhost,
+                        confirmDestinationOrigin: options.confirmDestinationOrigin,
+                        confirmPrivateDestination: options.confirmPrivateDestination
+                    });
+                    const staged = createStagedResult({
+                        kind: 'project',
+                        payload: validatedProject,
+                        renderPayload: {
+                            ...message.renderPayload,
+                            destinationDecisions: validatedProject.destinationDecisions
+                        },
+                        sourceId: session.sourceId,
+                        diagnostics: session.diagnostics,
+                        commitToken: message.commitToken
+                    });
+                    if (!session.stage(requestId, staged)) {
+                        finish(reject, new Error('The archive result is no longer active.'));
+                        return;
+                    }
+                    const committed = session.commit(requestId, message.commitToken);
+                    finish(resolve, {
+                        type: 'ready',
+                        project: committed.payload,
+                        accounting: message.accounting,
+                        manifest: message.manifest,
+                        overrideAttempt
+                    });
+                } catch (error) {
+                    session.discard(requestId, 'failed');
+                    error.retryEligible = false;
+                    finish(reject, error);
+                }
+            }
+        };
+        worker.onerror = event => {
+            session.discard(requestId, 'failed');
+            finish(reject, new Error(event.message || 'Archive worker failed.'));
+        };
+
+        if (options.signal) {
+            const cancel = () => {
+                worker.postMessage({ type: 'cancel', requestId });
+                setTimeout(() => {
+                    if (!settled) {
+                        session.cancel(requestId);
+                        finish(reject, new DOMException('Archive loading was cancelled.', 'AbortError'));
+                    }
+                }, options.cancelTimeoutMs ?? 1000);
+            };
+            if (options.signal.aborted) {
+                cancel();
+                return;
+            }
+            options.signal.addEventListener('abort', cancel, { once: true });
         }
 
-        return project;
+        session.setPhase(requestId, 'reading');
+        worker.postMessage({
+            type: 'start',
+            requestId,
+            sourceId: session.sourceId,
+            source: fileBlob,
+            readResults,
+            boundaries: options.boundaries ?? {},
+            overrideCapacity: overrideAttempt?.used === true,
+            colorPalette: appSettings.colorPalette,
+            commitToken: uniqueId('archive-commit')
+        });
+    });
+}
+
+export class ProjectUtils {
+    static async readProjectFile(fileBlob, readResults = false, options = {}) {
+        if (!(fileBlob instanceof Blob)) {
+            throw new TypeError('A project archive Blob is required.');
+        }
+        const normalized = normalizeArguments(readResults, options);
+        normalized.options.pageUrl ??= globalThis.location?.href;
+        const source = createUntrustedSource({
+            id: uniqueId('archive-source'),
+            kind: 'archive',
+            displayName: fileBlob.name || 'project archive',
+            format: 'zip',
+            declaredBytes: fileBlob.size,
+            observedBytes: fileBlob.size,
+            foreground: true,
+            automatic: false
+        });
+        const firstSession = new IntakeSession({
+            id: uniqueId('archive-session'),
+            source,
+            requestId: uniqueId('archive-request')
+        });
+        const firstOutcome = await runWorker(
+            fileBlob,
+            normalized.readResults,
+            normalized.options,
+            firstSession
+        );
+        if (firstOutcome.type === 'ready') {
+            return firstOutcome.project;
+        }
+
+        const capacity = firstOutcome.message;
+        if (capacity.type !== 'capacityExceeded'
+            || typeof normalized.options.confirmCapacityOverride !== 'function') {
+            const error = new Error('Project archive exceeded an injected processing boundary.');
+            error.category = 'capacity';
+            error.reasonCode = 'capacity-exceeded';
+            error.dimension = capacity.dimension;
+            error.observed = capacity.observed;
+            error.supported = capacity.supported;
+            error.retryEligible = true;
+            throw error;
+        }
+
+        const attempt = createCapacityOverrideAttempt({
+            id: uniqueId('archive-override'),
+            sourceId: source.id,
+            originalSessionId: firstSession.id,
+            dimension: capacity.dimension,
+            observedValue: capacity.observed,
+            supportedValue: capacity.supported
+        });
+        const approved = await normalized.options.confirmCapacityOverride({
+            attempt,
+            source,
+            acknowledge: () => attempt.acknowledge()
+        });
+        if (approved !== true || !attempt.acknowledged) {
+            const error = new Error('Project archive capacity retry was not approved.');
+            error.name = 'AbortError';
+            throw error;
+        }
+        attempt.markUsed();
+
+        const retrySession = new IntakeSession({
+            id: uniqueId('archive-session'),
+            source,
+            requestId: uniqueId('archive-request')
+        });
+        retrySession.overrideAttemptId = attempt.id;
+        const retryOutcome = await runWorker(
+            fileBlob,
+            normalized.readResults,
+            normalized.options,
+            retrySession,
+            attempt
+        );
+        return retryOutcome.project;
     }
 }

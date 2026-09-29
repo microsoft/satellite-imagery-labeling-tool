@@ -1,0 +1,14 @@
+node_modules/
+test-results/
+playwright-report/
+blob-report/
+coverage/
+dist/
+build/
+*.log
+.env*
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+.idea/

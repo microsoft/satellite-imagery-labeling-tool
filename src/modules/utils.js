@@ -1,3 +1,8 @@
+import {
+    createDestinationDecision,
+    requireAllowedDestination
+} from './remoteDestination.js';
+
 export class Utils {
     ///////////////////////////////////////
     // Constants
@@ -356,33 +361,60 @@ export class Utils {
      * @param {*} proxy Optional. A URL to a proxy service.
      * @returns A Promise that responds with JSON content. We should simply be able to append the encoded request URL to the proxy URL.
      */
-    static makeSignedRequest(map, url, proxy) {
+    static makeSignedRequest(map, urlOrDecision, proxy, destinationOptions = {}) {
         //This is a reusable function that sets the Azure Maps platform domain, sings the request, and makes use of any transformRequest set on the map.
         return new Promise((resolve, reject) => {
+            const originalUrl = typeof urlOrDecision === 'string'
+                ? urlOrDecision
+                : urlOrDecision?.resolvedUrl;
+            const hadAzureMapsDomain = originalUrl?.includes('{azMapsDomain}') === true;
+            const expandedUrl = originalUrl?.replace('{azMapsDomain}', atlas.getDomain());
+            let decision;
+            try {
+                decision = typeof urlOrDecision === 'string'
+                    ? createDestinationDecision(expandedUrl, destinationOptions)
+                    : urlOrDecision;
+                requireAllowedDestination(decision);
+            } catch (error) {
+                reject(error);
+                return;
+            }
+            const url = decision.resolvedUrl;
             //Replace the domain placeholder to ensure the same Azure Maps cloud is used throughout the app.
             let requestParams = {
-                url: url.replace('{azMapsDomain}', atlas.getDomain())
+                url: decision.resolvedUrl
             };
 
             //Get the authentication details from the map for use in the request.
-            if (url.indexOf('{azMapsDomain}') > -1) {
+            if (hadAzureMapsDomain) {
                 requestParams = map.authentication.signRequest(requestParams);
             }
 
             //Transform the request.
             const transform = map.getServiceOptions().tranformRequest;
             if (transform) {
-                requestParams = transform(url);
+                requestParams = transform(decision.resolvedUrl);
             }
 
             if (proxy && proxy !== '' && requestParams.url.indexOf(proxy) === -1) {
-                requestParams.url = proxy + encodeURIComponent(requestParams.url);
+                const proxyDecision = createDestinationDecision(proxy, destinationOptions);
+                requireAllowedDestination(proxyDecision);
+                requestParams.url = proxyDecision.resolvedUrl + encodeURIComponent(requestParams.url);
             }
 
             //Make a CORs fetch request to the URL.
-            fetch(requestParams.url, {
+            let finalDecision;
+            try {
+                finalDecision = createDestinationDecision(requestParams.url, destinationOptions);
+                requireAllowedDestination(finalDecision);
+            } catch (error) {
+                reject(error);
+                return;
+            }
+            fetch(finalDecision.resolvedUrl, {
                 method: 'GET',
                 mode: 'cors',
+                redirect: 'error',
                 headers: new Headers(requestParams.headers)
             })
                 .then(result => {
@@ -702,7 +734,7 @@ export class Utils {
         input.value = displayName;
 
         const span = document.createElement('span');
-        span.innerHTML = displayName;
+        span.textContent = displayName;
 
         label.appendChild(span);
         label.setAttribute('rel', displayName);

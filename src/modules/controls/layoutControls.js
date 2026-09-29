@@ -155,7 +155,12 @@ export class Navbar extends SimpleEventerClass {
 		btn.title = item.name;
 		btn.setAttribute('role', 'button');
 		btn.setAttribute('aria-pressed', 'false');
-		btn.innerHTML = `<i class="material-symbols-outlined">${item.icon}</i><span>${item.name}</span>`;
+		const icon = document.createElement('i');
+		icon.className = 'material-symbols-outlined';
+		icon.textContent = item.icon;
+		const label = document.createElement('span');
+		label.textContent = item.name;
+		btn.append(icon, label);
 
 		//Capture and add click events to "Collapse" and "Expand" buttons. Add a click event to set the select item to all other buttons.
 		if (item.name === 'Collapse') {
@@ -244,7 +249,7 @@ export class Flyout extends SimpleEventerClass {
 			self.#currentItem = item;
 
 			//Set the header name of the flyout for the current select flyout panel.
-			self.header.querySelector('span').innerHTML = item.name;
+			self.header.querySelector('span').textContent = item.name;
 
 			//Set the visibility of all flyout panels such that only the selected lyout is displayed.
 			if (item.flyoutCard) {

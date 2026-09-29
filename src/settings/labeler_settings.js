@@ -15,6 +15,9 @@ export let appSettings = {
 		name: 'annotation-session-db',	//The storage id used by the app.
 	},
 
+	// Optional deployment/test boundaries. Production defaults do not impose a custom-data limit.
+	customDataBoundaries: {},
+
 	/**
 	 * When saving data, this specifies if the extended Azure Maps GeoJSON specification should be used to maintain circles and rectangles.
 	 * Note that circles are Point objects that include a subType property set to 'circle' and a radius property in meters.
@@ -84,5 +87,8 @@ export let appSettings = {
 		"https://overpass.kumi.systems/api/",
 		"https://overpass.openstreetmap.fr/api/",
 		"https://overpass.openstreetmap.ru/cgi/"
-	]
+	],
+
+	reviewedTaskOrigins: [],
+	allowLocalhostHttp: false
 };

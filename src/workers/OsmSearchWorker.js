@@ -1,107 +1,169 @@
 importScripts('../libs/turf.min.js');
 importScripts('../libs/osmtogeojson.js');
+importScripts('../modules/workerDestination.js');
 
-/**
- * A worker that makes a query to an OSM Overpass Turbo API, and processes the results.
- * 
- * Inputs of "e.data"
- *  - aoi - The area of interest to limit the features to.
- *  - server - The Overpass turbo API endpoint server to connect to.
- *  - query - The Overpass turbo query.
- *  - center - The center point of the map. Fills in '{{center}}' placeholder in query.
- *  - bbox - The bounding box of the aoi or map (map bbox used when no aoi). Fills in '{{bbox}}' placeholder in query.
- *  - existingGeoms - Existing geometries. If new data intersects existing data, do not import it.
- *  - allowLines - If LineString geometries can be returned.
- *  - allowPolygons - If Polygon geometries can be returned.
- */
-onmessage = function (e) {
-    //Make a CORs request to the overpass turbo API.
-    fetch(e.data.server + 'interpreter', {
-        method: 'POST',
-        mode: 'cors',
-        cache: 'no-cache',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-        },
+let activeRequest = null;
 
-        //Append the query to the POST body.
-        body: 'data=' + cleanQuery(e.data.query, e.data.center, e.data.bbox)
-    }).then(x => x.json()).then(osm_data => {
-        //Filter the resulting OSM data.
-        const data = filterNewData(osm_data, e.data);
-        postMessage(data);
-    }, e => {
-        postMessage({ error: 'Unable to retrieve data from overpass.' });
-    });
+onmessage = function (event) {
+    const message = event.data ?? {};
+    if (message.type === 'cancel') {
+        if (!activeRequest || message.requestId === activeRequest.id) {
+            activeRequest?.controller.abort();
+            activeRequest = null;
+        }
+        return;
+    }
+
+    const requestId = message.requestId || crypto.randomUUID();
+    activeRequest?.controller.abort();
+    const request = { id: requestId, controller: new AbortController() };
+    activeRequest = request;
+    runRequest(request, message);
 };
 
-/**
- * Cleans the Overpass turbo query to help ensure it doesn't fail on the server side. Also inserts values into the {{center}} and {{bbox}} placeholders.
- * @param {*} query The raw text query.
- * @param {*} center The center of the query.
- * @param {*} bbox The bounding box of interest.
- * @returns A cleans Overpass turbo query.
- */
-function cleanQuery(query, center, bbox) {
-    //Replace the {{center}} placeholder.
-    if (query.indexOf("{{center}}") > -1) {
-        query = query.replace(/\{\{center\}\}/gi, `${center[1]},${center[0]}`);
+async function runRequest(request, options) {
+    try {
+        if (options.overrideCapacity === true || options.capacityOverride) {
+            throw new TypeError('OSM search requests are not eligible for capacity overrides.');
+        }
+        const requestUrl = WorkerDestination.requireAllowedRequest(options);
+        postProgress(request, 'requesting', 0, { featuresSeen: 0, intersectionChecks: 0 });
+        const response = await fetch(requestUrl, {
+            method: 'POST',
+            mode: 'cors',
+            cache: 'no-cache',
+            redirect: 'error',
+            signal: request.controller.signal,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+            },
+            body: 'data=' + cleanQuery(options.query, options.center, options.bbox)
+        });
+        if (!response.ok) {
+            throw new Error(`OSM request failed with status ${response.status}.`);
+        }
+
+        const osmData = await response.json();
+        ensureActive(request);
+        postProgress(request, 'converting', 35, { featuresSeen: 0, intersectionChecks: 0 });
+        const converted = osmtogeojson(osmData);
+        ensureActive(request);
+        const result = await filterNewData(converted, options, request);
+        ensureActive(request);
+        postMessage({
+            type: 'ready',
+            requestId: request.id,
+            data: result.features,
+            accounting: result.accounting
+        });
+    } catch (error) {
+        if (error.name === 'AbortError' || !isActive(request)) {
+            postMessage({ type: 'cancelled', requestId: request.id });
+        } else {
+            postMessage({
+                type: 'failed',
+                requestId: request.id,
+                error: error.message || 'Unable to retrieve or process data from Overpass.'
+            });
+        }
+    } finally {
+        if (isActive(request)) {
+            activeRequest = null;
+        }
     }
-
-    //Replace the {{bbox}} placeholder.
-    if (query.indexOf("{{bbox}}") > -1) {
-        query = query.replace(/\{\{bbox\}\}/gi, `${bbox[1]},${bbox[0]},${bbox[3]},${bbox[2]}`);
-    }
-
-    //Remove comments /* */ and //
-    query = query.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '');
-
-    //Remove new lines characters and surrounding whitespace.
-    query = query.replace(/[\s\t]*\n[\s\t]*/gi, '');
-
-    //Encode the query.
-    return encodeURIComponent(query);
 }
 
-/**
- * Filters raw OSM data into GeoJSON features.
- * @param {*} osm_data Raw OSM data returned by Overpass turbo.
- * @param {*} opt Options passed into the worker.
- * @returns Filters GeoJSON features.
- */
-function filterNewData(osm_data, opt) {
-    const filteredData = [];
+function cleanQuery(query, center, bbox) {
+    if (query.indexOf('{{center}}') > -1) {
+        query = query.replace(/\{\{center\}\}/gi, `${center[1]},${center[0]}`);
+    }
+    if (query.indexOf('{{bbox}}') > -1) {
+        query = query.replace(/\{\{bbox\}\}/gi, `${bbox[1]},${bbox[0]},${bbox[3]},${bbox[2]}`);
+    }
+    return encodeURIComponent(
+        query
+            .replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '')
+            .replace(/[\s\t]*\n[\s\t]*/gi, '')
+    );
+}
 
-    //Convert OSM data to geojson data.
-    const data = osmtogeojson(osm_data);
+async function filterNewData(data, options, request) {
+    if (!data || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
+        throw new TypeError('Converted OSM data must be a GeoJSON FeatureCollection.');
+    }
 
-    //Loop through each feature.
-    data.features.forEach(f => {
-        //Ensure data doesn't overlap existing shape.
-        let overlaps = false;
+    const filtered = [];
+    const existing = Array.isArray(options.existingGeoms) ? options.existingGeoms : [];
+    let intersectionChecks = 0;
 
-        //Limit to line and/or polygon data. Point data not supported in this app at this time.
-        if ((f.geometry.type.indexOf('LineString') > -1 && opt.allowLines) ||
-            (f.geometry.type.indexOf('Polygon') > -1 && opt.allowPolygons)) {
+    for (let index = 0; index < data.features.length; index++) {
+        ensureActive(request);
+        const feature = data.features[index];
+        const geometryType = feature?.geometry?.type || '';
+        const allowed = (geometryType.includes('LineString') && options.allowLines)
+            || (geometryType.includes('Polygon') && options.allowPolygons);
 
-            //Check to see if data intersects with the area of interest (if provided).
-            if ((opt.aoi && opt.aoi.type && turf.booleanIntersects(opt.aoi, f.geometry)) || !opt.aoi || !opt.aoi.type) {
-
-                //Loop through all existing shapes and check to see if the new data intersects. Only import data that doesn't intersect with existing data.
-                for (let i = 0; i < opt.existingGeoms.length; i++) {
-                    if (turf.booleanIntersects(opt.existingGeoms[i].geometry, f.geometry)) {
+        if (allowed) {
+            const inArea = !options.aoi?.type
+                || turf.booleanIntersects(options.aoi, feature.geometry);
+            intersectionChecks++;
+            if (inArea) {
+                let overlaps = false;
+                for (const existingFeature of existing) {
+                    ensureActive(request);
+                    intersectionChecks++;
+                    if (turf.booleanIntersects(existingFeature.geometry, feature.geometry)) {
                         overlaps = true;
                         break;
                     }
                 }
-
-                //Import non-overlapping feature.
                 if (!overlaps) {
-                    filteredData.push(f);
+                    filtered.push(feature);
                 }
             }
         }
-    });
 
-    return filteredData;
+        if (index % 50 === 0) {
+            postProgress(request, 'filtering', 35 + Math.floor((index + 1) / Math.max(1, data.features.length) * 64), {
+                featuresSeen: index + 1,
+                intersectionChecks
+            });
+            await yieldToWorker();
+        }
+    }
+
+    return {
+        features: filtered,
+        accounting: {
+            featuresSeen: data.features.length,
+            featuresAccepted: filtered.length,
+            intersectionChecks
+        }
+    };
+}
+
+function postProgress(request, phase, percent, accounting) {
+    if (isActive(request)) {
+        postMessage({
+            type: 'progress',
+            requestId: request.id,
+            phase,
+            percent: Math.max(0, Math.min(99, percent)),
+            accounting
+        });
+    }
+}
+
+function ensureActive(request) {
+    if (!isActive(request) || request.controller.signal.aborted) {
+        throw new DOMException('The request was cancelled.', 'AbortError');
+    }
+}
+
+function isActive(request) {
+    return activeRequest === request;
+}
+
+function yieldToWorker() {
+    return new Promise(resolve => setTimeout(resolve, 0));
 }

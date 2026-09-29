@@ -33,6 +33,10 @@ Also see the [Documentation](docs/README.md) and the [Spatial imagery ML Jupyter
 
 ## Additional Features
 
+- Worker-isolated, incremental GeoJSONL and project archive intake with progress, cancellation, validation, and transactional commit.
+- Sanitized Markdown instructions and safe text handling for task, class, legend, and service metadata.
+- Validated HTTPS destinations with direct redirect rejection and explicit task-origin disclosure.
+- Version 2 compatibility checks for tasks, projects, results, and browser-restored data.
 - Multi-delete (lasso delete).
 - Shift imported data to align with your imagery.
 - Support for color themes to align with user preferences.
@@ -65,13 +69,18 @@ Here are some related projects we recommend checking out:
 
 ## List of third party javascript libraries/versions
 
-This project has directly imported and hosted versions of the following third party javascript libraries. This project purposely avoids using NPM and other developer tools and frameworks to keep things simple, so that anyone can easily get this project up and running locally (many users will be data and AI people, not developers).
+This project directly hosts the browser runtime libraries listed below so the static application remains easy to run locally. NPM is used only for contributor test tooling and to reproduce pinned vendored assets; it is not required to use the application.
+
+Contributor tests include Node unit tests and Playwright coverage for Chromium, Firefox, and WebKit. See `package.json` for the pinned commands.
 
 - [Azure Maps Image Exporter 0.0.2](https://github.com/Azure-Samples/azure-maps-image-exporter) - A helper library for generating screenshots of an Azure Maps control.
 - [Azure Maps Bring Data Into View Control 0.0.2](https://github.com/Azure-Samples/azure-maps-bring-data-into-view-control) - Adds a button to the map that makes it easy to focus back to where your data is.
 - [JSZip v3.10.1](http://stuartk.com/jszip) - Library for reading and writing zip files.
 - [localForage 1.10.0](https://localforage.github.io/localForage) - Makes it easy to store data locally in the browser using a single API. For more information, see the [Labeler's Auto save documentation](docs/Labeler.md#auto-save-feature).
 - [Marked 4.0.18](https://github.com/markedjs/marked) - Adds support for markdown syntax, used by the instructions panel.
+- [DOMPurify 3.4.15](https://github.com/cure53/DOMPurify) - Sanitizes rendered instruction markup.
+- [Clarinet 0.12.6](https://github.com/dscape/clarinet) - Incrementally tokenizes JSON during worker-based imports.
+- [Material Symbols 0.47.5](https://github.com/marella/material-symbols) - Provides the self-hosted outlined icon font.
 - [osmtogeojson 3.0.0](https://github.com/tyrasd/osmtogeojson) - A library for converting OSM data into GeoJSON objects.
 - [TurfJS 6.5.0](https://turfjs.org/) - A library for performing advanced spatial calculations.
 

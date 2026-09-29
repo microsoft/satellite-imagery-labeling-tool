@@ -685,7 +685,7 @@ export class AnnotationClassControl extends SimpleEventerClass {
 export class SimpleContentControl {
 	#container;
 	#options = {
-		content: '',
+		content: null,
 		visible: true
 	};
 
@@ -738,9 +738,12 @@ export class SimpleContentControl {
 		if(options){
 			const o = this.#options;
 
-			if(options.content){
+			if (options.content instanceof Node) {
 				o.content = options.content;
-				this.#container.innerHTML = options.content;
+				this.#container.replaceChildren(options.content);
+			} else if (typeof options.content === 'string') {
+				o.content = options.content;
+				this.#container.textContent = options.content;
 			}
 
 			if(typeof options.visible === 'boolean'){

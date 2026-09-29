@@ -1,0 +1,19 @@
+{
+  "name": "satellite-imagery-labeling-tool",
+  "version": "2.0.5",
+  "private": true,
+  "type": "module",
+  "description": "Development tooling and tests for the browser-based spatial imagery labeling toolkit.",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:browser",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:browser": "playwright test",
+    "test:hygiene": "node --test tests/unit/repositoryHygiene.test.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "clarinet": "0.12.6",
+    "dompurify": "3.4.15",
+    "material-symbols": "0.47.5"
+  }
+}

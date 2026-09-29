@@ -4,7 +4,8 @@ import { mapSettings } from '../settings/map_settings.js';
 import { Utils } from './utils.js';
 import { ProjectUtils } from './projectUtils.js';
 import { SimpleLayerControl, SearchBarControl, SimpleContentControl } from './controls/customMapControls.js';
-import { ContentDialog, SaveResultsDialog } from './controls/dialogs.js';
+import { ContentDialog, SaveResultsDialog, confirmCapacityOverride, confirmPrivateDestination } from './controls/dialogs.js';
+import { renderSafeMarkdown, setText } from './safeRendering.js';
 
 export class ProjectViewerApp {
 
@@ -81,29 +82,7 @@ export class ProjectViewerApp {
     };
 
     #legends = {
-        tasks: `
-        <h2>Task area stats</h2>
-        <b># of labeled features</b>
-        <div class='legend'>
-            <svg width="225" height="46" viewBox="0 0 200 46.96" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                <defs>      
-                    <linearGradient id="task-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#d7191c"></stop>
-                        <stop offset="1%" stop-color="#ffffcc"></stop>
-                        <stop offset="25%" stop-color="#a1dab4"></stop>
-                        <stop offset="50%" stop-color="#41b6c4"></stop>
-                        <stop offset="75%" stop-color="#2c7fb8"></stop>
-                        <stop offset="100%" stop-color="#253494"></stop>
-                    </linearGradient>
-                </defs>
-
-                <rect x="0" y="0" width="200" height="20" fill="url('#task-gradient')"></rect>
-
-                <g style="stroke:#011c2c;stroke-width:2;"><line x1="0" y1="23" x2="200" y2="23"></line><line x1="1" y1="23" x2="1" y2="28"></line><line x1="199" y1="23" x2="199" y2="28"></line></g>
-
-                <g style="fill:#011c2c;font-size:12px;font-family:'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;text-align:center;text-anchor:middle;dominant-baseline:hanging;"><text x="1" y="31">0</text><text x="199" y="31">{{largestLabeledTask}}</text></g>
-            </svg>
-        </div>`,
+        tasks: null,
         primary: '',
         secondary: '',
     }
@@ -135,7 +114,8 @@ export class ProjectViewerApp {
         };
 
         //Help functionality.
-        const helpDialog = new ContentDialog('Project viewer help', marked.parse(appSettings.helpViewerContent), 'helpContent');
+        const helpRendered = renderSafeMarkdown(appSettings.helpViewerContent);
+        const helpDialog = new ContentDialog('Project viewer help', helpRendered, 'helpContent');
         document.getElementById('helpBtn').onclick = () => {
             helpDialog.show();
         };
@@ -351,7 +331,19 @@ export class ProjectViewerApp {
         const self = this;
         self.#popup.close();
 
-        ProjectUtils.readProjectFile(fileBlob, true).then(project => {
+        ProjectUtils.readProjectFile(fileBlob, true, {
+            confirmCapacityOverride,
+            confirmDestinationOrigin: decision => Promise.resolve(confirm(
+                `This project references data from ${decision.origin}. Continue?`
+            )),
+            confirmPrivateDestination: decision => confirmPrivateDestination({
+                title: 'Load project data from a private address?',
+                description: `This project references ${decision.origin}. Only continue if you trust this private network destination.`,
+                acknowledgment: 'I understand this project will contact a private network address.',
+                action: 'Load project data',
+                cancel: 'Cancel project load'
+            })
+        }).then(project => {
             self.#currentProject = project;
 
             //Load and zoom into the area of interest.
@@ -376,104 +368,146 @@ export class ProjectViewerApp {
 
             //Create legends.
             const pc = props.primary_classes;
-            let html = ['<h2>', pc.display_name,'</h2><div class="legend">'];
+            const primaryLegend = document.createElement('div');
+            const primaryTitle = document.createElement('h2');
+            setText(primaryTitle, pc.display_name);
+            const primaryItems = document.createElement('div');
+            primaryItems.className = 'legend';
+            primaryLegend.append(primaryTitle, primaryItems);
 
             pc.names.forEach(n => {
-                html.push(self.#getLegendItem(n, project.colors.primary[project.colors.primary.indexOf(n) + 1]));
+                primaryItems.appendChild(self.#getLegendItem(
+                    n,
+                    project.colors.primary[project.colors.primary.indexOf(n) + 1]
+                ));
             });
 
-            html.push('</div>');
-
-            self.#legends.primary = html.join('');
+            self.#legends.primary = primaryLegend;
 
             const sc = props.secondary_classes;
             if(sc && sc.names && sc.names.length > 0){
-                let html = ['<h2>', sc.display_name,'</h2><div class="legend">'];
+                const secondaryLegend = document.createElement('div');
+                const secondaryTitle = document.createElement('h2');
+                setText(secondaryTitle, sc.display_name);
+                const secondaryItems = document.createElement('div');
+                secondaryItems.className = 'legend';
+                secondaryLegend.append(secondaryTitle, secondaryItems);
 
                 sc.names.forEach(n => {
-                    html.push(self.#getLegendItem(n, project.colors.secondary[project.colors.secondary.indexOf(n) + 1]));
+                    secondaryItems.appendChild(self.#getLegendItem(
+                        n,
+                        project.colors.secondary[project.colors.secondary.indexOf(n) + 1]
+                    ));
                 });
-                html.push('</div>');
 
-                self.#legends.secondary = html.join('');
+                self.#legends.secondary = secondaryLegend;
             } else {
-                self.#legends.secondary = '';
+                self.#legends.secondary = document.createElement('div');
                 if(self.#focus === 'secondary') {
                     self.#focus = 'primary';
                 }
             }
 
-            html = [
-                `Task areas: ${project.tasks.length}`, 
-                `Labeled features: ${project.results.length}`
-            ];
+            const statsPanel = document.getElementById('statsPanel');
+            statsPanel.replaceChildren();
+            const addStatsLine = (text, tagName = 'div') => {
+                const line = document.createElement(tagName);
+                setText(line, text);
+                statsPanel.appendChild(line);
+            };
+            addStatsLine(`Task areas: ${project.tasks.length}`);
+            addStatsLine(`Labeled features: ${project.results.length}`);
 
             if(project.stats.primary && Object.keys(project.stats.primary).length > 0){
-                html.push(`<br/>${pc.display_name}:<br/>`);
+                addStatsLine(`${pc.display_name}:`);
 
                 Object.keys(project.stats.primary).forEach(n => {
-                    html.push(` - ${n}: ${project.stats.primary[n] || 0}`);
+                    addStatsLine(` - ${n}: ${project.stats.primary[n] || 0}`);
                 });
             }
             
             const fs = document.getElementById('focusSelector');
-            fs.options[1].innerHTML = pc.display_name;
+            setText(fs.options[1], pc.display_name);
 
             if(sc && sc.names && sc.names.length > 0 && project.stats.secondary && Object.keys(project.stats.secondary).length > 0){
-                html.push(`<br/>${sc.display_name}:<br/>`);
+                addStatsLine(`${sc.display_name}:`);
 
                 Object.keys(project.stats.secondary).forEach(n => {
-                    html.push(` - ${n}: ${project.stats.secondary[n] || 0}`);
+                    addStatsLine(` - ${n}: ${project.stats.secondary[n] || 0}`);
                 });
 
-                fs.options[2].innerHTML = sc.display_name;
+                setText(fs.options[2], sc.display_name);
                 fs.options[2].disabled = false;
             } else {
                 fs.options[2].disabled = true;
             }
 
             if(project.stats.resultsNoTasks > 0){
-                html.push(`<br/>Results missing a task: ${project.stats.resultsNoTasks}`);    
+                addStatsLine(`Results missing a task: ${project.stats.resultsNoTasks}`);
             }
 
             if(project.stats.tasksNoResults > 0){
-                html.push(`<br/><hr/>Tasks with no labeled features: ${project.stats.tasksNoResults}<br/>`);
+                statsPanel.appendChild(document.createElement('hr'));
+                addStatsLine(`Tasks with no labeled features: ${project.stats.tasksNoResults}`);
 
                 project.tasks.forEach(t => {
                     if(!t.properties.stats) {
-                        html.push(`<a href="javascript:void(0)" class="viewTaskLink">${t.properties.name}</a>`);
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'viewTaskLink';
+                        setText(button, t.properties.name);
+                        button.onclick = () => {
+                            const shape = self.#taskSource.getShapeById(t.properties.name);
+                            if (shape) {
+                                self.map.setCamera({
+                                    bounds: atlas.data.BoundingBox.fromData(shape),
+                                    padding: 20
+                                });
+                            }
+                        };
+                        statsPanel.appendChild(button);
                     }
                 });
             }
-
-            document.getElementById('statsPanel').innerHTML = html.join('<br/>');
-
-            document.querySelectorAll('.viewTaskLink').forEach(e => {
-                e.onclick = () => {
-                    var s = self.#taskSource.getShapeById(e.innerText);
-                    if(s) {
-                        self.map.setCamera({
-                            bounds: atlas.data.BoundingBox.fromData(s),
-                            padding: 20
-                        })
-                    }
-                };
-            });
 
             //Clear the file input so that the same file can be reloaded if desired.
             document.getElementById('loadLocalProjectFile').value = null;
 
             self.#setFocus();
+        }).catch(error => {
+            document.getElementById('loadLocalProjectFile').value = null;
+            alert(error.message || 'Unable to load project archive.');
         });
     }
 
     #getLegendItem(label, color) {
-        return `<div class="legend-item">
-            <svg class="legend-box" style="width:20px;" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <rect x="1" y="1" height="18" width="18" fill="${color}" stroke-width="1"></rect>
-            </svg>
-            <span aria-label="${label}">${label}</span>
-        </div>`;
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        const swatch = document.createElement('span');
+        swatch.className = 'legend-box';
+        swatch.style.backgroundColor = typeof color === 'string' && CSS.supports('color', color)
+            ? color
+            : 'transparent';
+        const text = document.createElement('span');
+        setText(text, label);
+        item.append(swatch, text);
+        return item;
+    }
+
+    #getTaskLegend(largestLabeledTask) {
+        const legend = document.createElement('div');
+        const title = document.createElement('h2');
+        setText(title, 'Task area stats');
+        const label = document.createElement('strong');
+        setText(label, '# of labeled features');
+        const scale = document.createElement('div');
+        scale.className = 'legend task-count-legend';
+        scale.style.background = 'linear-gradient(90deg, #d7191c, #ffffcc 1%, #a1dab4 25%, #41b6c4 50%, #2c7fb8 75%, #253494)';
+        scale.setAttribute('aria-label', `Range from 0 to ${largestLabeledTask}`);
+        const range = document.createElement('div');
+        setText(range, `0 - ${largestLabeledTask}`);
+        legend.append(title, label, scale, range);
+        return legend;
     }
 
     #setFocus(focus) {
@@ -517,9 +551,15 @@ export class ProjectViewerApp {
                     break;
             }
 
-            self.#legendControl.setOptions({
-                content: self.#legends[focus].replace('{{largestLabeledTask}}', p.stats.largestLabeledTask || 1)
-            });
+            if (focus === 'tasks') {
+                self.#legendControl.setOptions({
+                    content: self.#getTaskLegend(p.stats.largestLabeledTask || 1)
+                });
+            } else {
+                self.#legendControl.setOptions({
+                    content: self.#legends[focus].cloneNode(true)
+                });
+            }
         }
     }
 
@@ -528,43 +568,50 @@ export class ProjectViewerApp {
 
         const p = e.shapes[0].getProperties();
 
-        const html = [`<div class="popup-content">Task ID: <br/>${p.name}<br/><br/>`];
+        const content = document.createElement('div');
+        content.className = 'popup-content';
+        const addLine = (text, strong = false) => {
+            const line = document.createElement(strong ? 'strong' : 'div');
+            setText(line, text);
+            content.appendChild(line);
+        };
+        addLine('Task ID:');
+        addLine(p.name);
 
         if(p.stats) {
-            html.push(`<b>${p.stats.numEntities} labeled features.</b><br/><br/>`);
-
-            html.push(`${p.primary_classes.display_name}:<br/>`);
+            addLine(`${p.stats.numEntities} labeled features.`, true);
+            addLine(`${p.primary_classes.display_name}:`);
 
             Object.keys(p.stats.primary).forEach(n => {
-                html.push(` - ${n}: ${p.stats.primary[n] || 0}<br/>`);
+                addLine(` - ${n}: ${p.stats.primary[n] || 0}`);
             });
 
             const sc = p.secondary_classes;
 
             if(sc && sc.names && sc.names.length > 0){
-                html.push(`<br/>${sc.display_name}:<br/>`);
+                addLine(`${sc.display_name}:`);
 
                 Object.keys(p.stats.secondary).forEach(n => {
-                    html.push(` - ${n}: ${p.stats.secondary[n] || 0}<br/>`);
+                    addLine(` - ${n}: ${p.stats.secondary[n] || 0}`);
                 });
             }
 
         } else {
-            html.push('<b>Has no labeled features.</b>');
+            addLine('Has no labeled features.', true);
         }
 
-        html.push('</div>');
-
         self.#popup.setOptions({
-            content: html.join(''),
+            content,
             position: e.position
         });
         self.#popup.open(self.map);
     }
 
     #showEntityPopup = (e) => {
+        const content = document.createElement('pre');
+        setText(content, JSON.stringify(e.shapes[0].getProperties(), null, 2));
         this.#popup.setOptions({
-            content: atlas.PopupTemplate.applyTemplate(e.shapes[0].getProperties()),
+            content,
             position: e.position
         });
         this.#popup.open(this.map);

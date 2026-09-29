@@ -1,0 +1,31 @@
+{
+  "type": "Feature",
+  "properties": {
+    "note": "deterministic"
+  },
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ]
+    ]
+  }
+}

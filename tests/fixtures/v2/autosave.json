@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "data": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": {
+          "task_name": "task-1",
+          "source": "Drawing",
+          "class": "building"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [[[0.1, 0.1], [0.2, 0.1], [0.2, 0.2], [0.1, 0.1]]]
+        }
+      }
+    ]
+  }
+}

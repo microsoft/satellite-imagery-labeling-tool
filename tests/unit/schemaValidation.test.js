@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+    DANGEROUS_KEY_POLICY,
     SchemaValidationError,
     assertNoDangerousKeys,
     validateProject,
@@ -9,6 +10,13 @@ import {
     validateTask,
     validateTaskResults
 } from '../../src/modules/schemaValidation.js';
+
+test('uses the fail-closed dangerous-key policy', () => {
+    assert.deepEqual(DANGEROUS_KEY_POLICY, {
+        action: 'reject-record',
+        reasonCode: 'dangerous-key'
+    });
+});
 
 function validTask() {
     return {
@@ -122,11 +130,22 @@ test('validates nested GeoJSON geometry collections', () => {
 });
 
 for (const key of ['__proto__', 'prototype', 'constructor']) {
-    test(`rejects recursive ${key} keys`, () => {
-        const value = JSON.parse(`{"safe":{"nested":{"${key}":{"polluted":true}}}}`);
-        assert.throws(() => assertNoDangerousKeys(value), error =>
-            error instanceof SchemaValidationError && error.reasonCode === 'dangerous-key'
-        );
+    test(`rejects ${key} collisions at every schema depth without mutating input`, () => {
+        const inputs = [
+            JSON.parse(`{"${key}":{"value":"top-level"}}`),
+            JSON.parse(`{"safe":{"nested":{"${key}":{"value":"nested"}}}}`),
+            JSON.parse(`{"safe":[{"${key}":{"value":"array-member"}}]}`)
+        ];
+
+        for (const value of inputs) {
+            const before = JSON.stringify(value);
+            assert.throws(() => assertNoDangerousKeys(value), error =>
+                error instanceof SchemaValidationError
+                && error.reasonCode === 'dangerous-key'
+                && error.path.endsWith(`.${key}`)
+            );
+            assert.equal(JSON.stringify(value), before);
+        }
     });
 }
 

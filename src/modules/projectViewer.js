@@ -6,6 +6,8 @@ import { ProjectUtils } from './projectUtils.js';
 import { SimpleLayerControl, SearchBarControl, SimpleContentControl } from './controls/customMapControls.js';
 import { ContentDialog, SaveResultsDialog, confirmCapacityOverride, confirmPrivateDestination } from './controls/dialogs.js';
 import { renderSafeMarkdown, setText } from './safeRendering.js';
+import { showDestinationDeclinedNotice } from './operationNotice.js';
+import { presentField } from './presentationContexts.js';
 
 export class ProjectViewerApp {
 
@@ -93,7 +95,7 @@ export class ProjectViewerApp {
         const hasAZMapAuth = Utils.isAzureMapsAuthValid(mapSettings.azureMapsAuth);
         this.#hasAZMapAuth = hasAZMapAuth;
 
-        document.querySelector('title').innerText = appSettings.builderTitle;
+        setText(document.querySelector('title'), appSettings.builderTitle);
 
         //Initialize a map instance.
         self.map = Utils.createMap('myMap', mapSettings.azureMapsAuth);
@@ -344,6 +346,10 @@ export class ProjectViewerApp {
                 cancel: 'Cancel project load'
             })
         }).then(project => {
+            if (project.status === 'declined') {
+                showDestinationDeclinedNotice('Project load', project.decision);
+                return;
+            }
             self.#currentProject = project;
 
             //Load and zoom into the area of interest.
@@ -370,7 +376,12 @@ export class ProjectViewerApp {
             const pc = props.primary_classes;
             const primaryLegend = document.createElement('div');
             const primaryTitle = document.createElement('h2');
-            setText(primaryTitle, pc.display_name);
+            presentField(
+                primaryTitle,
+                'class.display_name',
+                'viewer-primary-legend-title',
+                pc.display_name
+            );
             const primaryItems = document.createElement('div');
             primaryItems.className = 'legend';
             primaryLegend.append(primaryTitle, primaryItems);
@@ -388,7 +399,12 @@ export class ProjectViewerApp {
             if(sc && sc.names && sc.names.length > 0){
                 const secondaryLegend = document.createElement('div');
                 const secondaryTitle = document.createElement('h2');
-                setText(secondaryTitle, sc.display_name);
+                presentField(
+                    secondaryTitle,
+                    'class.display_name',
+                    'viewer-secondary-legend-title',
+                    sc.display_name
+                );
                 const secondaryItems = document.createElement('div');
                 secondaryItems.className = 'legend';
                 secondaryLegend.append(secondaryTitle, secondaryItems);
@@ -455,7 +471,12 @@ export class ProjectViewerApp {
                         const button = document.createElement('button');
                         button.type = 'button';
                         button.className = 'viewTaskLink';
-                        setText(button, t.properties.name);
+                        presentField(
+                            button,
+                            'task.name',
+                            'viewer-unlabeled-task',
+                            t.properties.name
+                        );
                         button.onclick = () => {
                             const shape = self.#taskSource.getShapeById(t.properties.name);
                             if (shape) {
@@ -489,7 +510,7 @@ export class ProjectViewerApp {
             ? color
             : 'transparent';
         const text = document.createElement('span');
-        setText(text, label);
+        presentField(text, 'class.name', 'viewer-class-legend-item', label);
         item.append(swatch, text);
         return item;
     }
@@ -576,7 +597,9 @@ export class ProjectViewerApp {
             content.appendChild(line);
         };
         addLine('Task ID:');
-        addLine(p.name);
+        const taskName = document.createElement('div');
+        presentField(taskName, 'task.name', 'viewer-task-popup', p.name);
+        content.appendChild(taskName);
 
         if(p.stats) {
             addLine(`${p.stats.numEntities} labeled features.`, true);
@@ -609,7 +632,12 @@ export class ProjectViewerApp {
 
     #showEntityPopup = (e) => {
         const content = document.createElement('pre');
-        setText(content, JSON.stringify(e.shapes[0].getProperties(), null, 2));
+        presentField(
+            content,
+            'result.properties',
+            'viewer-result-popup',
+            JSON.stringify(e.shapes[0].getProperties(), null, 2)
+        );
         this.#popup.setOptions({
             content,
             position: e.position

@@ -177,6 +177,33 @@ test('only capacity failures are retry eligible', async () => {
     );
 });
 
+test('reports all manifest capacity dimensions crossed while equality passes', async () => {
+    const entries = validEntries();
+    const declaredExpandedBytes = entries.reduce(
+        (total, archiveEntry) => total + archiveEntry.declaredExpandedBytes,
+        0
+    );
+
+    await assert.rejects(
+        process(entries, {
+            boundaries: {
+                entryCount: entries.length - 1,
+                declaredExpandedBytes: declaredExpandedBytes - 1
+            }
+        }),
+        error => error instanceof ArchiveCapacityError
+            && error.crossings.map(crossing => crossing.dimension).join(',')
+                === 'entryCount,declaredExpandedBytes'
+    );
+
+    await process(entries, {
+        boundaries: {
+            entryCount: entries.length,
+            declaredExpandedBytes
+        }
+    });
+});
+
 test('observes cancellation between extraction chunks and releases the staged outcome', async () => {
     let cancelled = false;
     await assert.rejects(

@@ -216,6 +216,43 @@ test('project utilities disclose unreviewed archive origins before returning sta
     expect(outcome.decision.status).toBe('allowed');
 });
 
+test('project utilities return a distinct declined archive outcome without committing state', async ({ page }) => {
+    const outcome = await page.evaluate(async documents => {
+        const { ProjectUtils } = await import('/src/modules/projectUtils.js');
+        const zip = new JSZip();
+        for (const [path, document] of Object.entries(documents)) {
+            zip.file(path, JSON.stringify(document));
+        }
+        const source = await zip.generateAsync({ type: 'blob' });
+        const currentState = { id: 'unchanged-project' };
+        const result = await ProjectUtils.readProjectFile(source, false, {
+            confirmDestinationOrigin: () => false
+        });
+        return {
+            currentState,
+            result
+        };
+    }, (() => {
+        const settings = projectSettings();
+        settings.features[0].properties.layers.imagery = {
+            type: 'TileLayer',
+            tileUrl: 'https://declined.example/{z}/{x}/{y}.png'
+        };
+        const task = taskDocument('task-1');
+        task.features[0].properties.layers = structuredClone(
+            settings.features[0].properties.layers
+        );
+        return {
+            'project_builder_settings.json': settings,
+            'tasks/task-1.json': task
+        };
+    })());
+
+    expect(outcome.currentState.id).toBe('unchanged-project');
+    expect(outcome.result.status).toBe('declined');
+    expect(outcome.result.decision.origin).toBe('https://declined.example');
+});
+
 test('project utilities reject invalid relationships and destinations before returning state', async ({ page }) => {
     const outcome = await page.evaluate(async documents => {
         const { ProjectUtils } = await import('/src/modules/projectUtils.js');
@@ -265,4 +302,65 @@ test('project utilities reject invalid relationships and destinations before ret
     expect(outcome.reasonCode).toBe('scheme-not-allowed');
     expect(outcome.stateId).toBe('unchanged-project');
     expect(outcome.confirmations).toBe(0);
+});
+
+test('archive worker acknowledges pause and cancellation within one second', async ({ page }) => {
+    const outcome = await page.evaluate(async document => {
+        const zip = new JSZip();
+        zip.file('project_builder_settings.json', JSON.stringify(document));
+        for (let index = 0; index < 100; index++) {
+            zip.file(`tasks/task-${index}.json`, JSON.stringify({
+                ...document,
+                features: [{
+                    ...document.features[0],
+                    properties: {
+                        ...document.features[0].properties,
+                        name: `task-${index}`
+                    }
+                }]
+            }));
+        }
+        const source = await zip.generateAsync({ type: 'blob' });
+        const worker = new Worker('/src/workers/ArchiveIntakeWorker.js');
+        return new Promise((resolve, reject) => {
+            let controlStarted = 0;
+            let controlTimeout;
+            const startupTimeout = setTimeout(() => {
+                worker.terminate();
+                reject(new Error('Archive worker did not start.'));
+            }, 5000);
+            const seen = [];
+            worker.onmessage = event => {
+                if (event.data.type === 'started') {
+                    clearTimeout(startupTimeout);
+                    controlStarted = performance.now();
+                    controlTimeout = setTimeout(() => {
+                        worker.terminate();
+                        reject(new Error('Archive worker did not respond to controls.'));
+                    }, 1000);
+                    worker.postMessage({ type: 'pause', requestId: 'archive-controls' });
+                } else if (event.data.type === 'pauseUnsupported') {
+                    seen.push(event.data.type);
+                    worker.postMessage({ type: 'cancel', requestId: 'archive-controls' });
+                } else if (event.data.type === 'cancelled') {
+                    seen.push(event.data.type);
+                    clearTimeout(controlTimeout);
+                    worker.terminate();
+                    resolve({ seen, elapsed: performance.now() - controlStarted });
+                }
+            };
+            worker.postMessage({
+                type: 'start',
+                requestId: 'archive-controls',
+                sourceId: 'archive-source',
+                source,
+                readResults: false,
+                boundaries: {},
+                commitToken: 'archive-commit'
+            });
+        });
+    }, projectSettings());
+
+    expect(outcome.seen).toEqual(['pauseUnsupported', 'cancelled']);
+    expect(outcome.elapsed).toBeLessThanOrEqual(1000);
 });

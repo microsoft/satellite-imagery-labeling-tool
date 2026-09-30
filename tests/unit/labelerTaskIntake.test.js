@@ -119,7 +119,7 @@ test('uses the stronger private-destination approval path before fetching', asyn
     let privateApprovalCount = 0;
     let requestCount = 0;
 
-    await assert.rejects(loadValidatedTaskFromUrl(
+    const outcome = await loadValidatedTaskFromUrl(
         'https://10.0.0.7/task.json',
         loadOptions({
             discloseTaskOrigin: async () => {
@@ -135,11 +135,32 @@ test('uses the stronger private-destination approval path before fetching', asyn
                 requestCount += 1;
             }
         })
-    ));
+    );
 
     assert.equal(ordinaryDisclosureCount, 0);
     assert.equal(privateApprovalCount, 1);
     assert.equal(requestCount, 0);
+    assert.equal(outcome.status, 'declined');
+    assert.equal(outcome.decision.reason, 'private-address-approval-required');
+    assert.equal(outcome.decision.origin, 'https://10.0.0.7');
+});
+
+test('returns a distinct declined task outcome without issuing or remembering a request', async () => {
+    let requestCount = 0;
+    const outcome = await loadValidatedTaskFromUrl(
+        'https://tasks.example/task.json',
+        loadOptions({
+            discloseTaskOrigin: async () => false,
+            fetchImpl: async () => {
+                requestCount += 1;
+            }
+        })
+    );
+
+    assert.equal(requestCount, 0);
+    assert.equal(outcome.status, 'declined');
+    assert.equal(outcome.decision.origin, 'https://tasks.example');
+    assert.equal(outcome.decision.status, 'blocked');
 });
 
 test('validates task data before returning a staged replacement', () => {

@@ -1,4 +1,6 @@
 import { Utils, SimpleEventerClass } from '../utils.js';
+import { presentField } from '../presentationContexts.js';
+import { setText } from '../safeRendering.js';
 
 ////////////////////////////////
 // Custom map controls
@@ -368,6 +370,12 @@ export class SimpleLayerControl {
 	#createRadioBtn(layerId) {
 		const self = this;
 		const label = Utils.createCheckInput('radio', layerId, self.#currentLayer === layerId, self.#radioGroupName);
+		presentField(
+			label.querySelector('span'),
+			'layer.name',
+			'labeler-layer-control',
+			layerId
+		);
 		label.onclick = (e) => {
 			let id = label.getAttribute('rel');
 			self.#setVisibleLayer(id);
@@ -495,7 +503,12 @@ export class AnnotationClassControl extends SimpleEventerClass {
 		if (primary && primary.names && primary.names.length > 0) {
 			const title = document.createElement('div');
 			title.className = 'annotation-class-control-title';
-			title.innerText = primary.display_name || 'Primary class';			
+			presentField(
+				title,
+				'class.display_name',
+				'labeler-primary-class-title',
+				primary.display_name || 'Primary class'
+			);
 			self.#primaryContainer.appendChild(title);
 
 			if (!self.#currentPrimary || primary.names.indexOf(self.#currentPrimary) === -1) {
@@ -535,7 +548,12 @@ export class AnnotationClassControl extends SimpleEventerClass {
 		if (secondary && secondary.names && secondary.names.length > 0) {
 			const title = document.createElement('div');
 			title.className = 'annotation-class-control-title';
-			title.innerText = secondary.display_name || 'Secondary class';
+			presentField(
+				title,
+				'class.display_name',
+				'labeler-secondary-class-title',
+				secondary.display_name || 'Secondary class'
+			);
 			self.#secondaryContainer.appendChild(title);
 
 			if (!self.#currentSecondary || secondary.names.indexOf(self.#currentSecondary) === -1) {
@@ -596,6 +614,12 @@ export class AnnotationClassControl extends SimpleEventerClass {
 	 */
 	#createClassElm(name, color, parent, checked, groupName) {
 		const label = Utils.createCheckInput('radio', name, checked, groupName);
+		presentField(
+			label.querySelector('span'),
+			'class.name',
+			'labeler-class-option',
+			name
+		);
 
 		if (color) {
 			label.style.color = color;
@@ -743,7 +767,7 @@ export class SimpleContentControl {
 				this.#container.replaceChildren(options.content);
 			} else if (typeof options.content === 'string') {
 				o.content = options.content;
-				this.#container.textContent = options.content;
+				setText(this.#container, options.content);
 			}
 
 			if(typeof options.visible === 'boolean'){

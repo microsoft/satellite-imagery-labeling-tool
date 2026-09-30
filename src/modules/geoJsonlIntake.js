@@ -1,3 +1,5 @@
+import './workerProtocol.js';
+
 const TERMINAL_MESSAGES = new Set([
     'ready',
     'failed',
@@ -33,9 +35,14 @@ export function confirmPartialGeoJsonlImport(summary, confirmAction = globalThis
     const examples = (summary.invalidSamples || [])
         .map(sample => `record ${sample.recordNumber}: ${sample.reasonCode}`)
         .join('\n');
+    const dimensions = Object.entries(summary.counters ?? {})
+        .map(([name, value]) => `${name}=${value}`)
+        .join(', ');
     return confirmAction(
         `${summary.validCount} valid Feature records and ${summary.invalidCount} invalid records were found.\n\n`
-        + `${examples}\n\nImport only the previewed valid records?`
+        + `${examples}\n\n`
+        + `${dimensions ? `Measured dimensions: ${dimensions}\n\n` : ''}`
+        + 'Import only the previewed valid records?'
     ) === true;
 }
 
@@ -49,13 +56,48 @@ export function startGeoJsonlIntake(file, options = {}) {
     const commitToken = options.commitToken ?? crypto.randomUUID();
     const worker = (options.workerFactory ?? (() => new Worker('workers/GeoJsonlImportWorker.js')))();
     let settled = false;
-
-    const completion = new Promise((resolve, reject) => {
-        worker.onmessage = event => {
-            const message = event.data || {};
-            if (message.requestId !== requestId) {
+    let rejectCompletion;
+    const watchdog = globalThis.WorkerProtocol.createWorkerSilenceWatchdog({
+        timeoutMs: options.silenceTimeoutMs ?? 1000,
+        onSilence: () => {
+            if (settled) {
                 return;
             }
+            worker.postMessage({ type: 'cancel', requestId });
+            settled = true;
+            worker.terminate();
+            const error = new GeoJsonlIntakeError(
+                'GeoJSONL worker stopped responding. The staged import was discarded and may be retried.',
+                { type: 'unresponsive', requestId }
+            );
+            error.retryEligible = true;
+            rejectCompletion(error);
+        }
+    });
+
+    const completion = new Promise((resolve, reject) => {
+        rejectCompletion = reject;
+        worker.onmessage = event => {
+            const rawMessage = event.data || {};
+            if (rawMessage.requestId !== requestId) {
+                return;
+            }
+            let message;
+            try {
+                message = globalThis.WorkerProtocol.validateWorkerEvent(rawMessage);
+            } catch (error) {
+                if (!settled) {
+                    settled = true;
+                    watchdog.stop();
+                    worker.terminate();
+                    reject(new GeoJsonlIntakeError(error.message, {
+                        type: 'failed',
+                        requestId
+                    }));
+                }
+                return;
+            }
+            watchdog.touch();
 
             options.onMessage?.(message);
             if (!TERMINAL_MESSAGES.has(message.type) || settled) {
@@ -63,6 +105,7 @@ export function startGeoJsonlIntake(file, options = {}) {
             }
 
             settled = true;
+            watchdog.stop();
             worker.terminate();
             if (message.type === 'ready') {
                 resolve(message);
@@ -80,6 +123,7 @@ export function startGeoJsonlIntake(file, options = {}) {
                 return;
             }
             settled = true;
+            watchdog.stop();
             worker.terminate();
             reject(new GeoJsonlIntakeError(event.message || 'GeoJSONL worker failed.', {
                 type: 'failed',

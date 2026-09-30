@@ -38,3 +38,38 @@ test('committable files do not disclose private planning data or package feeds',
 
     assert.deepEqual(disclosed, []);
 });
+
+test('externally hosted runtime assets are integrity pinned with anonymous CORS', () => {
+    const pages = ['labeler.html', 'projectBuilder.html', 'projectViewer.html'];
+    for (const page of pages) {
+        const markup = fs.readFileSync(path.join(repositoryRoot, 'src', page), 'utf8');
+        const externalAssets = [...markup.matchAll(
+            /<(?:script|link)\b[^>]*(?:src|href)="https:\/\/atlas\.microsoft\.com\/[^"]+"[^>]*>/g
+        )].map(match => match[0]);
+        assert.equal(externalAssets.length, 5, page);
+        for (const asset of externalAssets) {
+            assert.match(asset, /\bintegrity="sha384-[A-Za-z0-9+/=]+"/, page);
+            assert.match(asset, /\bcrossorigin="anonymous"/, page);
+        }
+    }
+});
+
+test('third-party notices record pinned versions and minimum browser support', () => {
+    const notices = fs.readFileSync(
+        path.join(repositoryRoot, 'src', 'libs', 'THIRD-PARTY-NOTICES.md'),
+        'utf8'
+    );
+    for (const dependency of [
+        'Material Symbols 0.47.5',
+        'DOMPurify 3.4.15',
+        'Clarinet 0.12.6',
+        'Azure Maps Web SDK Map Control 3',
+        'Azure Maps Drawing Tools 1',
+        'Azure Maps Spatial IO 0'
+    ]) {
+        assert.match(notices, new RegExp(dependency.replaceAll('.', '\\.')));
+    }
+    assert.match(notices, /Chromium 105, Firefox 102, and WebKit 16\.0/);
+    assert.match(notices, /Microsoft Learn.*locally.*host/i);
+    assert.match(notices, /ETag/i);
+});

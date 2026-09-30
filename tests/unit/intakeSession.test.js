@@ -85,6 +85,22 @@ test('diagnostic samples are bounded while totals remain exact', () => {
     assert.equal(diagnostic.sampleIdentifiers.length, 5);
 });
 
+test('diagnostic samples bound identifier length and preview every measured dimension', () => {
+    const diagnostic = createIntakeDiagnostic({
+        category: 'capacity',
+        reasonCode: 'capacity-exceeded',
+        identifiers: ['x'.repeat(200)],
+        measuredDimensions: {
+            positions: { observed: 3, supported: 2 },
+            rings: { observed: 2, supported: 1 }
+        }
+    });
+
+    assert.ok(diagnostic.sampleIdentifiers[0].endsWith('...[truncated]'));
+    assert.ok(diagnostic.sampleIdentifiers[0].length <= 96);
+    assert.deepEqual(Object.keys(diagnostic.measuredDimensions), ['positions', 'rings']);
+});
+
 test('capacity approval is explicit, one-use, and remains in memory', () => {
     const attempt = createCapacityOverrideAttempt({
         id: 'override-1',

@@ -29,6 +29,7 @@ export class GeometryAccounting {
         this.safeguard = options.safeguard ?? null;
         this.counters = createCounters();
         this.exceeded = null;
+        this.crossings = new Map();
     }
 
     add(dimension, amount = 1) {
@@ -45,17 +46,29 @@ export class GeometryAccounting {
             );
         }
 
-        if (!this.comparisonsEnabled || this.exceeded) {
+        if (!this.comparisonsEnabled) {
             return this.exceeded;
         }
 
         const supported = this.boundaries[dimension];
         if (Number.isFinite(supported) && this.counters[dimension] > supported) {
-            this.exceeded = Object.freeze({
-                exceeded: true,
+            this.crossings.set(dimension, Object.freeze({
                 dimension,
                 observed: this.counters[dimension],
-                supported,
+                supported
+            }));
+            this.exceeded = Object.freeze({
+                exceeded: true,
+                dimension: this.crossings.values().next().value.dimension,
+                observed: this.crossings.values().next().value.observed,
+                supported: this.crossings.values().next().value.supported,
+                crossings: Object.freeze([...this.crossings.values()]),
+                counters: this.snapshot()
+            });
+        } else if (this.crossings.size > 0) {
+            this.exceeded = Object.freeze({
+                ...this.exceeded,
+                crossings: Object.freeze([...this.crossings.values()]),
                 counters: this.snapshot()
             });
         }

@@ -9,16 +9,16 @@ import {
 	confirmCapacityOverride,
 	confirmPrivateDestination
 } from './controls/dialogs.js';
-import { renderInstruction, renderSafeMarkdown, setText } from './safeRendering.js';
+import { setText } from './safeRendering.js';
+import { showDestinationDeclinedNotice } from './operationNotice.js';
+import { presentField } from './presentationContexts.js';
 import {
 	createCapacityOverrideAttempt,
 	createUntrustedSource
 } from './intakeSession.js';
 import {
-	createWorkflowDestinationDecision,
-	requireAllowedDestination,
-	validateExpandedDestination
-} from './remoteDestination.js';
+	createExpandedServiceDestination
+} from './serviceDestinationIntake.js';
 import {
 	confirmPartialGeoJsonlImport,
 	isMatchingReadyResult,
@@ -29,6 +29,7 @@ import {
 	validateLabelerAutosave,
 	validateLabelerTask
 } from './labelerTaskIntake.js';
+import './workerProtocol.js';
 
 /** The main logic for the spatial annotation labeler app. */
 export class LabelerApp {
@@ -58,6 +59,8 @@ export class LabelerApp {
 	#osmWizardRequestId;
 	#customDataRequestId;
 	#customDataRequest;
+	#customDataWatchdog;
+	#osmWizardWatchdog;
 	#featureSource = new atlas.source.DataSource();
 	#fillLayer;
 	#outlineLayer;
@@ -159,7 +162,7 @@ export class LabelerApp {
 		this.#hasAZMapAuth = hasAZMapAuth;
 
 		setText(document.querySelector('#appSubtitle'), appSettings.appSubtitle);
-		document.querySelector('title').innerText = appSettings.appSubtitle;
+		setText(document.querySelector('title'), appSettings.appSubtitle);
 
 		//Setup navbar.
 		self.navbar = new Navbar(document.querySelector('.navbar'), self.#navItems);
@@ -269,6 +272,11 @@ export class LabelerApp {
 			if (this.#pendingTaskLoadId !== sourceId) {
 				return;
 			}
+			if (result.status === 'declined') {
+				this.#pendingTaskLoadId = null;
+				showDestinationDeclinedNotice('Task load', result.decision);
+				return;
+			}
 			this.#commitValidatedTask(result.validated);
 		} catch (error) {
 			if (this.#pendingTaskLoadId !== sourceId) {
@@ -288,63 +296,24 @@ export class LabelerApp {
 		return [...origins];
 	}
 
-	async #approveServiceDestination(value, options = {}) {
-		const decisionOptions = {
-			workflow: 'service',
+	async #createExpandedServiceDestination(template, expandedValue, options = {}) {
+		return createExpandedServiceDestination(template, expandedValue, {
+			...options,
 			pageUrl: window.location.href,
 			taskUrl: this.#taskBaseUrl,
 			currentOrigin: window.location.origin,
 			reviewedOrigins: options.reviewedOrigins ?? this.#getReviewedServiceOrigins(),
 			allowLocalhost: mapSettings.allowLocalhostHttp === true,
-			requireTaskConsent: true,
-			allowedPlaceholders: options.allowedPlaceholders ?? [],
-			redirectPolicy: 'block-all'
-		};
-		let decision = createWorkflowDestinationDecision(value, decisionOptions);
-		if (decision.reason === 'private-address-approval-required') {
-			const approved = await confirmPrivateDestination({
+			confirmDestinationOrigin: decision =>
+				confirm(`${options.operation} will contact ${decision.origin}. Continue?`),
+			confirmPrivateDestination: decision => confirmPrivateDestination({
 				title: `${options.operation} from a private address?`,
 				description: `${options.operation} will contact ${decision.origin}. Only continue if you trust this private network destination.`,
 				acknowledgment: 'I understand this operation will contact a private network address.',
 				action: `Continue ${options.operation.toLowerCase()}`,
 				cancel: 'Cancel'
-			});
-			if (!approved) {
-				throw new Error(`${options.operation} was cancelled.`);
-			}
-			decision = createWorkflowDestinationDecision(value, {
-				...decisionOptions,
-				consent: 'private-explicitly-approved'
-			});
-		} else if (decision.reason === 'task-origin-approval-required') {
-			if (!confirm(`${options.operation} will contact ${decision.origin}. Continue?`)) {
-				throw new Error(`${options.operation} was cancelled.`);
-			}
-			decision = createWorkflowDestinationDecision(value, {
-				...decisionOptions,
-				consent: 'task-load-approved'
-			});
-		}
-		return requireAllowedDestination(decision);
-	}
-
-	async #createExpandedServiceDestination(template, expandedValue, options = {}) {
-		const templateDecision = await this.#approveServiceDestination(template, options);
-		const destinationDecision = requireAllowedDestination(validateExpandedDestination(
-			templateDecision,
-			expandedValue,
-			{
-				baseUrl: this.#taskBaseUrl,
-				currentOrigin: window.location.origin,
-				reviewedOrigins: options.reviewedOrigins ?? this.#getReviewedServiceOrigins(),
-				allowLocalhost: mapSettings.allowLocalhostHttp === true
-			}
-		));
-		return {
-			templateDecision,
-			destinationDecision,
-			requestUrl: destinationDecision.resolvedUrl
-		};
+			})
+		});
 	}
 
 	///////////////////////////
@@ -457,7 +426,12 @@ export class LabelerApp {
 
 		if (cds && cdsl && cds !== '' && cdsl !== '') {
 			document.getElementById('customImportBtn').style.display = '';
-			document.querySelector('#customImportBtn span').innerText = cdsl;
+			presentField(
+				document.querySelector('#customImportBtn span'),
+				'service.label',
+				'labeler-custom-service-button',
+				cdsl
+			);
 		} else {
 			document.getElementById('customImportBtn').style.display = 'none';
 		}
@@ -495,7 +469,12 @@ export class LabelerApp {
 						originalSessionId: crypto.randomUUID(),
 						retryUsed: false
 					};
-					await self.#dispatchCustomDataRequest();
+					const outcome = await self.#dispatchCustomDataRequest();
+					if (outcome.status === 'declined') {
+						self.#customDataRequest = null;
+						showDestinationDeclinedNotice('Custom data import', outcome.decision);
+						return;
+					}
 					cancelImportBtn.focus();
 				} catch (error) {
 					document.getElementById('customImportLoadingScreen').style.display = 'none';
@@ -520,6 +499,9 @@ export class LabelerApp {
 				allowedPlaceholders: ['bbox']
 			}
 		);
+		if (destination.status === 'declined') {
+			return destination;
+		}
 
 		if (overrideAttempt) {
 			overrideAttempt.markUsed();
@@ -532,6 +514,21 @@ export class LabelerApp {
 		}
 
 		this.#customDataRequestId = crypto.randomUUID();
+		this.#customDataWatchdog?.stop();
+		this.#customDataWatchdog = globalThis.WorkerProtocol.createWorkerSilenceWatchdog({
+			timeoutMs: 1000,
+			onSilence: () => {
+				worker.postMessage({
+					type: 'cancel',
+					requestId: this.#customDataRequestId
+				});
+				worker.terminate();
+				this.#cdWorker = null;
+				this.#customDataRequest = null;
+				document.getElementById('customImportLoadingScreen').style.display = 'none';
+				alert('The custom data worker stopped responding. No data was imported; retry the operation.');
+			}
+		});
 		document.getElementById('customImportLoadingScreen').style.display = '';
 		worker.postMessage({
 			requestId: this.#customDataRequestId,
@@ -544,6 +541,7 @@ export class LabelerApp {
 			} : null,
 			conditionalIdentity: overrideAttempt?.conditionalIdentity ?? null
 		});
+		return Object.freeze({ status: 'started' });
 	}
 
 	async #handleCustomDataCapacity(message) {
@@ -571,6 +569,7 @@ export class LabelerApp {
 			dimension: message.dimension,
 			observedValue: message.observed,
 			supportedValue: message.supported,
+			crossings: message.crossings,
 			conditionalIdentity: message.conditionalIdentity
 		});
 		const approved = await confirmCapacityOverride({
@@ -588,7 +587,11 @@ export class LabelerApp {
 		}
 
 		try {
-			await this.#dispatchCustomDataRequest(attempt);
+			const outcome = await this.#dispatchCustomDataRequest(attempt);
+			if (outcome.status === 'declined') {
+				this.#customDataRequest = null;
+				showDestinationDeclinedNotice('Custom data import', outcome.decision);
+			}
 		} catch (error) {
 			document.getElementById('customImportLoadingScreen').style.display = 'none';
 			this.#customDataRequest = null;
@@ -596,16 +599,32 @@ export class LabelerApp {
 		}
 	}
 
-	#setGeoJsonlImportStatus(message, visible = true) {
+	#setGeoJsonlImportSource(message, visible = true) {
 		const container = document.getElementById('geoJsonlImportStatus');
 		container.hidden = !visible;
-		document.getElementById('geoJsonlImportMessage').textContent = message;
+		presentField(
+			document.getElementById('geoJsonlImportMessage'),
+			'intake.source_name',
+			'labeler-geojsonl-source',
+			message
+		);
+	}
+
+	#setGeoJsonlImportDiagnostic(message, visible = true) {
+		const container = document.getElementById('geoJsonlImportStatus');
+		container.hidden = !visible;
+		presentField(
+			document.getElementById('geoJsonlImportMessage'),
+			'intake.diagnostic',
+			'labeler-geojsonl-diagnostic',
+			message
+		);
 	}
 
 	#startGeoJsonlImport(file, source) {
 		const self = this;
 		self.#geoJsonlImportOperation?.cancel();
-		self.#setGeoJsonlImportStatus(`Reading ${file.name}...`);
+		self.#setGeoJsonlImportSource(`Reading ${file.name}...`);
 
 		const operation = startGeoJsonlIntake(file, {
 			mode: 'labeler',
@@ -615,13 +634,13 @@ export class LabelerApp {
 					return;
 				}
 				if (message.type === 'progress') {
-					self.#setGeoJsonlImportStatus(
+					self.#setGeoJsonlImportDiagnostic(
 						`Read ${message.bytesRead.toLocaleString()} of ${message.knownTotalBytes.toLocaleString()} bytes; ${message.recordsSeen} records checked.`
 					);
 				} else if (message.type === 'paused') {
-					self.#setGeoJsonlImportStatus(`Paused after ${message.checkpoint.recordsSeen} records.`);
+					self.#setGeoJsonlImportDiagnostic(`Paused after ${message.checkpoint.recordsSeen} records.`);
 				} else if (message.type === 'resumed') {
-					self.#setGeoJsonlImportStatus('GeoJSONL import resumed.');
+					self.#setGeoJsonlImportDiagnostic('GeoJSONL import resumed.');
 				}
 			}
 		});
@@ -635,12 +654,12 @@ export class LabelerApp {
 
 			const { invalidCount, invalidSamples, validCount } = message.summary;
 			if (!confirmPartialGeoJsonlImport({ invalidCount, invalidSamples, validCount })) {
-				self.#setGeoJsonlImportStatus('Partial GeoJSONL import was not confirmed.');
+				self.#setGeoJsonlImportDiagnostic('Partial GeoJSONL import was not confirmed.');
 				return;
 			}
 
 			self.#importFeatures(message.stagedResult.payload, source, true, true);
-			self.#setGeoJsonlImportStatus(
+			self.#setGeoJsonlImportDiagnostic(
 				`Imported ${validCount} valid Feature records${invalidCount > 0 ? `; ${invalidCount} invalid records were skipped after confirmation.` : '.'}`
 			);
 		}).catch(error => {
@@ -648,7 +667,7 @@ export class LabelerApp {
 				|| error.result?.type === 'cancelled') {
 				return;
 			}
-			self.#setGeoJsonlImportStatus('GeoJSONL import failed.');
+			self.#setGeoJsonlImportDiagnostic('GeoJSONL import failed.');
 			alert(error.message);
 		}).finally(() => {
 			if (self.#geoJsonlImportOperation?.requestId === operation.requestId) {
@@ -662,21 +681,33 @@ export class LabelerApp {
 	 * @param {*} e Worker response object. `e.data` is either a feature collection, or an object with an error property.
 	 */
 	#customImportResponded = (e) => {
-		if (e.data.requestId && e.data.requestId !== this.#customDataRequestId) {
+		let message;
+		try {
+			message = globalThis.WorkerProtocol.validateWorkerEvent(e.data);
+		} catch (error) {
+			this.#customDataWatchdog?.stop();
+			document.getElementById('customImportLoadingScreen').style.display = 'none';
+			this.#customDataRequest = null;
+			alert(error.message);
 			return;
 		}
-		if (e.data.type === 'progress') {
+		if (message.requestId !== this.#customDataRequestId) {
 			return;
 		}
-		if (e.data.type === 'capacityExceeded') {
-			this.#handleCustomDataCapacity(e.data).catch(error => {
+		this.#customDataWatchdog?.touch();
+		if (message.type === 'progress' || message.type === 'pauseUnsupported') {
+			return;
+		}
+		this.#customDataWatchdog?.stop();
+		if (message.type === 'capacityExceeded') {
+			this.#handleCustomDataCapacity(message).catch(error => {
 				document.getElementById('customImportLoadingScreen').style.display = 'none';
 				this.#customDataRequest = null;
 				alert(error.message || 'Unable to prepare the custom data retry.');
 			});
 			return;
 		}
-		if (e.data.type === 'cancelled') {
+		if (message.type === 'cancelled') {
 			document.getElementById('customImportLoadingScreen').style.display = 'none';
 			this.#customDataRequest = null;
 			return;
@@ -684,14 +715,14 @@ export class LabelerApp {
 		document.getElementById('customImportLoadingScreen').style.display = 'none';
 
 		//If there is an error, alert the user and do nothing else.
-		if (e.data.error || e.data.type === 'failed') {
+		if (message.error || message.type === 'failed') {
 			this.#customDataRequest = null;
-			alert(e.data.error || 'Unable to import custom data.');
+			alert(message.error || 'Unable to import custom data.');
 			return;
 		}
 
 		//Import the features. No need to filter as that was done in the worker. 
-		this.#importFeatures(e.data.data ?? e.data, {
+		this.#importFeatures(message.data ?? message, {
 			source: 'CustomDataImport'
 		}, false, true);
 		this.#customDataRequest = null;
@@ -703,6 +734,7 @@ export class LabelerApp {
 	#cancelDataImport = () => {
 		const self = this;
 		if (self.#cdWorker) {
+			self.#customDataWatchdog?.stop();
 			self.#cdWorker.postMessage({
 				type: 'cancel',
 				requestId: self.#customDataRequestId
@@ -1718,7 +1750,12 @@ export class LabelerApp {
 		}
 
 		if (cp) {
-			setText(document.querySelector('#appTitle'), cp.project_name);
+			presentField(
+				document.querySelector('#appTitle'),
+				'project.project_name',
+				'labeler-project-title',
+				cp.project_name
+			);
 
 			self.map.events.add('ready', () => {
 				self.#drawingManager.getOptions().toolbar.setOptions({
@@ -1741,8 +1778,12 @@ export class LabelerApp {
 
 			const instructions = cp.instructions || dc.features[0].properties.instructions || '';
 			const instructionsEl = document.getElementById('instructions');
-			const rendered = renderSafeMarkdown(instructions);
-			renderInstruction(instructionsEl, rendered);
+			presentField(
+				instructionsEl,
+				'task.instructions',
+				'labeler-task-instructions',
+				instructions
+			);
 			if (cp.instructions_on_load) {
 				self.navbar.setSelectedItem('Instructions');
 			}
@@ -1758,9 +1799,19 @@ export class LabelerApp {
 			//Set visibility of custom data service     			       
 			if (cp.customDataService && cp.customDataService !== '' && cp.customDataServiceLabel && cp.customDataServiceLabel !== '') {
 				document.getElementById('customImportBtn').style.display = '';
-				document.querySelector('#customImportBtn span').innerText = cp.customDataServiceLabel;
+				presentField(
+					document.querySelector('#customImportBtn span'),
+					'service.label',
+					'labeler-custom-service-button',
+					cp.customDataServiceLabel
+				);
 				dataShiftFilter.options[3].style.display = '';
-				dataShiftFilter.options[3].innerText = cp.customDataServiceLabel.replace(/^Add /gi, '');
+				presentField(
+					dataShiftFilter.options[3],
+					'service.label',
+					'labeler-custom-service-filter',
+					cp.customDataServiceLabel.replace(/^Add /gi, '')
+				);
 			} else {
 				document.getElementById('customImportBtn').style.display = 'none';
 				dataShiftFilter.options[3].style.display = 'none';
@@ -1924,7 +1975,7 @@ export class LabelerApp {
 		if (appSettings.overpassScripts) {
 			Object.keys(appSettings.overpassScripts).forEach(key => {
 				const option = document.createElement('option');
-				option.innerText = key;
+				setText(option, key);
 				osmScriptsElm.appendChild(option);
 			});
 		}
@@ -1948,7 +1999,7 @@ export class LabelerApp {
 		if (appSettings.overpassServers) {
 			appSettings.overpassServers.forEach(s => {
 				const option = document.createElement('option');
-				option.innerText = s;
+				setText(option, s);
 				osmServerElm.appendChild(option);
 			});
 		}
@@ -1990,6 +2041,10 @@ export class LabelerApp {
 						reviewedOrigins
 					}
 				);
+				if (destination.status === 'declined') {
+					showDestinationDeclinedNotice('OSM search', destination.decision);
+					return;
+				}
 
 				let osmWizardWorker = self.#osmWizardWorker;
 				if (!osmWizardWorker) {
@@ -2001,6 +2056,20 @@ export class LabelerApp {
 				document.getElementById('osmLoadingScreen').style.display = '';
 				const dt = self.config.properties.drawing_type;
 				self.#osmWizardRequestId = crypto.randomUUID();
+				self.#osmWizardWatchdog?.stop();
+				self.#osmWizardWatchdog = globalThis.WorkerProtocol.createWorkerSilenceWatchdog({
+					timeoutMs: 1000,
+					onSilence: () => {
+						osmWizardWorker.postMessage({
+							type: 'cancel',
+							requestId: self.#osmWizardRequestId
+						});
+						osmWizardWorker.terminate();
+						self.#osmWizardWorker = null;
+						document.getElementById('osmLoadingScreen').style.display = 'none';
+						alert('The OSM search worker stopped responding. No data was imported; retry the search.');
+					}
+				});
 				osmWizardWorker.postMessage({
 					requestId: self.#osmWizardRequestId,
 					...destination,
@@ -2028,26 +2097,37 @@ export class LabelerApp {
 	 * @param {*} e Worker response object. `e.data` is either a feature collection, or an object with an error property.
 	 */
 	#wizardResponded = (e) => {
-		if (e.data.requestId && e.data.requestId !== this.#osmWizardRequestId) {
+		let message;
+		try {
+			message = globalThis.WorkerProtocol.validateWorkerEvent(e.data);
+		} catch (error) {
+			this.#osmWizardWatchdog?.stop();
+			document.getElementById('osmLoadingScreen').style.display = 'none';
+			alert(error.message);
 			return;
 		}
-		if (e.data.type === 'progress') {
+		if (message.requestId !== this.#osmWizardRequestId) {
 			return;
 		}
-		if (e.data.type === 'cancelled') {
+		this.#osmWizardWatchdog?.touch();
+		if (message.type === 'progress' || message.type === 'pauseUnsupported') {
+			return;
+		}
+		this.#osmWizardWatchdog?.stop();
+		if (message.type === 'cancelled') {
 			document.getElementById('osmLoadingScreen').style.display = 'none';
 			return;
 		}
 		document.getElementById('osmLoadingScreen').style.display = 'none';
 
 		//If there is an error, alert the user and do nothing else.
-		if (e.data.error || e.data.type === 'failed') {
-			alert(e.data.error || 'Unable to import OSM data.');
+		if (message.error || message.type === 'failed') {
+			alert(message.error || 'Unable to import OSM data.');
 			return;
 		}
 
 		//Import the features. No need to filter as that was done in the worker. 
-		this.#importFeatures(e.data.data ?? e.data, {
+		this.#importFeatures(message.data ?? message, {
 			source: 'OSMOverpass'
 		}, false, true);
 	}
@@ -2058,6 +2138,7 @@ export class LabelerApp {
 	#cancelWizard = () => {
 		const self = this;
 		if (self.#osmWizardWorker) {
+			self.#osmWizardWatchdog?.stop();
 			self.#osmWizardWorker.postMessage({
 				type: 'cancel',
 				requestId: self.#osmWizardRequestId

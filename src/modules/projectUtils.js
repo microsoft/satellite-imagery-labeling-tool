@@ -12,6 +12,7 @@ import {
     requireAllowedDestination
 } from './remoteDestination.js';
 import { SchemaValidationError, validateProject } from './schemaValidation.js';
+import './workerProtocol.js';
 
 const TILE_PLACEHOLDERS = [
     'x', 'y', 'z', 'quadkey', 'bbox', 'bbox-epsg-3857', 'subdomain', 'azMapsDomain'
@@ -138,11 +139,17 @@ async function validateProjectWithApprovals(project, options) {
             const decision = error.destinationDecision;
             let approved = false;
             if (decision?.reason === 'task-origin-approval-required') {
+                if (typeof options.confirmDestinationOrigin !== 'function') {
+                    throw error;
+                }
                 approved = await options.confirmDestinationOrigin?.(decision) === true;
                 if (approved) {
                     approvedOrigins.add(decision.origin);
                 }
             } else if (decision?.reason === 'private-address-approval-required') {
+                if (typeof options.confirmPrivateDestination !== 'function') {
+                    throw error;
+                }
                 approved = await options.confirmPrivateDestination?.(decision) === true;
                 if (approved) {
                     privateApprovedOrigins.add(decision.origin);
@@ -151,14 +158,19 @@ async function validateProjectWithApprovals(project, options) {
                 throw error;
             }
             if (!approved) {
-                throw error;
+                return Object.freeze({
+                    status: 'declined',
+                    decision
+                });
             }
         }
     }
 }
 
 function uniqueId(prefix) {
-    return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
+    return `${prefix}-${globalThis.crypto?.randomUUID
+        ? globalThis.crypto.randomUUID()
+        : Math.random().toString(36).slice(2)}`;
 }
 
 function normalizeArguments(readResults, options) {
@@ -175,21 +187,46 @@ function runWorker(fileBlob, readResults, options, session, overrideAttempt = nu
         );
         const requestId = session.requestId;
         let settled = false;
+        const watchdog = globalThis.WorkerProtocol.createWorkerSilenceWatchdog({
+            timeoutMs: options.workerSilenceTimeoutMs ?? 1000,
+            onSilence: () => {
+                if (settled) {
+                    return;
+                }
+                worker.postMessage({ type: 'cancel', requestId });
+                session.discard(requestId, 'failed');
+                const error = new Error(
+                    'Archive worker stopped responding. Staged data was discarded and the operation may be retried.'
+                );
+                error.name = 'WorkerUnresponsiveError';
+                error.retryEligible = true;
+                finish(reject, error);
+            }
+        });
 
         const finish = (callback, value) => {
             if (settled) {
                 return;
             }
             settled = true;
+            watchdog.stop();
             worker.terminate();
             callback(value);
         };
 
         worker.onmessage = async event => {
-            const message = event.data ?? {};
+            let message;
+            try {
+                message = globalThis.WorkerProtocol.validateWorkerEvent(event.data ?? {});
+            } catch (error) {
+                session.discard(requestId, 'failed');
+                finish(reject, error);
+                return;
+            }
             if (message.requestId !== requestId) {
                 return;
             }
+            watchdog.touch();
             if (message.type === 'progress') {
                 session.setPhase(requestId, message.phase === 'ready'
                     ? 'preparing-render'
@@ -209,7 +246,20 @@ function runWorker(fileBlob, readResults, options, session, overrideAttempt = nu
                     reasonCode: 'capacity-exceeded',
                     observedValue: message.observed,
                     supportedValue: message.supported,
-                    capacityDimension: message.dimension
+                    capacityDimension: message.dimension,
+                    measuredDimensions: Object.fromEntries(
+                        (message.crossings ?? [{
+                            dimension: message.dimension,
+                            observed: message.observed,
+                            supported: message.supported
+                        }]).map(crossing => [
+                            crossing.dimension,
+                            {
+                                observed: crossing.observed,
+                                supported: crossing.supported
+                            }
+                        ])
+                    )
                 }));
                 finish(resolve, { type: 'capacityExceeded', message });
                 return;
@@ -246,6 +296,14 @@ function runWorker(fileBlob, readResults, options, session, overrideAttempt = nu
                         confirmDestinationOrigin: options.confirmDestinationOrigin,
                         confirmPrivateDestination: options.confirmPrivateDestination
                     });
+                    if (validatedProject.status === 'declined') {
+                        session.discard(requestId, 'declined');
+                        finish(resolve, {
+                            type: 'declined',
+                            decision: validatedProject.decision
+                        });
+                        return;
+                    }
                     const staged = createStagedResult({
                         kind: 'project',
                         payload: validatedProject,
@@ -344,6 +402,12 @@ export class ProjectUtils {
         if (firstOutcome.type === 'ready') {
             return firstOutcome.project;
         }
+        if (firstOutcome.type === 'declined') {
+            return Object.freeze({
+                status: 'declined',
+                decision: firstOutcome.decision
+            });
+        }
 
         const capacity = firstOutcome.message;
         if (capacity.type !== 'capacityExceeded'
@@ -364,7 +428,8 @@ export class ProjectUtils {
             originalSessionId: firstSession.id,
             dimension: capacity.dimension,
             observedValue: capacity.observed,
-            supportedValue: capacity.supported
+            supportedValue: capacity.supported,
+            crossings: capacity.crossings
         });
         const approved = await normalized.options.confirmCapacityOverride({
             attempt,

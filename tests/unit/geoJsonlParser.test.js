@@ -6,6 +6,7 @@ await import('../../src/modules/geoJsonlParser.js');
 
 const {
     CapacityError,
+    DANGEROUS_KEY_POLICY,
     IncrementalGeoJsonlParser,
     compactGeometryToGeoJson
 } = globalThis.GeoJsonlParser;
@@ -28,6 +29,13 @@ function parseInChunks(text, options = {}, chunkSize = 7) {
     }
     return parser.finish();
 }
+
+test('uses the fail-closed dangerous-key policy', () => {
+    assert.deepEqual(DANGEROUS_KEY_POLICY, {
+        action: 'reject-record',
+        reasonCode: 'dangerous-key'
+    });
+});
 
 test('frames adjacent top-level records across arbitrary decoder chunks', () => {
     const input = [
@@ -105,13 +113,23 @@ test('validates declared nesting, finite positions, ring minimum, and closure', 
     );
 });
 
-test('rejects dangerous keys without assigning them', () => {
-    const input = '{"type":"Feature","properties":{"constructor":{"x":1}},"geometry":{"type":"Point","coordinates":[0,0]}}';
+test('rejects each dangerous-key collision as an invalid record and continues intake', () => {
+    const collidingRecords = ['__proto__', 'prototype', 'constructor'].map(key =>
+        `{"type":"Feature","properties":{"${key}":{"value":"inert"}},"geometry":{"type":"Point","coordinates":[0,0]}}`
+    );
+    const input = [
+        ...collidingRecords,
+        JSON.stringify(feature({ type: 'Point', coordinates: [1, 2] }, { safe: true }))
+    ].join('\n');
     const result = parseInChunks(input, { mode: 'labeler' }, 4);
 
-    assert.equal(result.validCount, 0);
-    assert.equal(result.invalidCount, 1);
-    assert.equal(result.invalidSamples[0].reasonCode, 'dangerous-key');
+    assert.equal(result.validCount, 1);
+    assert.equal(result.invalidCount, 3);
+    assert.deepEqual(
+        result.invalidSamples.map(sample => sample.reasonCode),
+        ['dangerous-key', 'dangerous-key', 'dangerous-key']
+    );
+    assert.equal(result.features[0].properties.safe, true);
 });
 
 test('injected boundaries stop above but not at the exact value', () => {

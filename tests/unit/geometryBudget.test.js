@@ -68,3 +68,27 @@ test('records validation and pre-record diagnostics', () => {
         invalidRecordsBeforeCandidate: 2
     });
 });
+
+test('reports every crossed configured dimension while equality still passes', () => {
+    const accounting = new GeometryAccounting({
+        boundaries: {
+            positions: 2,
+            rings: 1,
+            renderVertices: 3
+        }
+    });
+
+    accounting.add('positions', 2);
+    accounting.add('rings', 1);
+    accounting.add('renderVertices', 3);
+    assert.equal(accounting.exceeded, null);
+
+    accounting.add('positions', 1);
+    accounting.add('rings', 1);
+    const result = accounting.add('renderVertices', 1);
+
+    assert.deepEqual(
+        result.crossings.map(crossing => crossing.dimension),
+        ['positions', 'rings', 'renderVertices']
+    );
+});

@@ -27,7 +27,7 @@ export class ArchiveIntakeError extends Error {
 }
 
 export class ArchiveCapacityError extends ArchiveIntakeError {
-    constructor(dimension, observed, supported, counters) {
+    constructor(dimension, observed, supported, counters, crossings = null) {
         super(
             `Archive processing exceeded the injected ${dimension} boundary.`,
             'capacity-exceeded'
@@ -38,6 +38,11 @@ export class ArchiveCapacityError extends ArchiveIntakeError {
         this.observed = observed;
         this.supported = supported;
         this.counters = Object.freeze({ ...counters });
+        this.crossings = Object.freeze(crossings ?? [{
+            dimension,
+            observed,
+            supported
+        }]);
         this.retryEligible = true;
     }
 }
@@ -201,7 +206,23 @@ export function addArchiveCounter(context, dimension, amount) {
     if (context.comparisonsEnabled !== false
         && Number.isFinite(supported)
         && observed > supported) {
-        throw new ArchiveCapacityError(dimension, observed, supported, context.counters);
+        const crossings = Object.entries(context.boundaries)
+            .filter(([name, boundary]) =>
+                Number.isFinite(boundary)
+                && Number.isFinite(context.counters[name])
+                && context.counters[name] > boundary)
+            .map(([name, boundary]) => ({
+                dimension: name,
+                observed: context.counters[name],
+                supported: boundary
+            }));
+        throw new ArchiveCapacityError(
+            dimension,
+            observed,
+            supported,
+            context.counters,
+            crossings
+        );
     }
     return observed;
 }
@@ -410,11 +431,28 @@ export async function processArchiveEntries(entries, options) {
         throw new TypeError('Archive extraction requires an extractEntry function.');
     }
 
-    addArchiveCounter(context, 'compressedBytes', 0);
     const manifest = validateArchiveManifest(entries);
-    addArchiveCounter(context, 'entryCount', manifest.entries.length);
+    context.counters.entryCount = manifest.entries.length;
     for (const entry of manifest.entries) {
-        addArchiveCounter(context, 'declaredExpandedBytes', entry.declaredExpandedBytes);
+        context.counters.declaredExpandedBytes += entry.declaredExpandedBytes;
+    }
+    const manifestCrossings = ['compressedBytes', 'entryCount', 'declaredExpandedBytes']
+        .filter(dimension => Number.isFinite(context.boundaries[dimension])
+            && context.counters[dimension] > context.boundaries[dimension])
+        .map(dimension => ({
+            dimension,
+            observed: context.counters[dimension],
+            supported: context.boundaries[dimension]
+        }));
+    if (context.comparisonsEnabled !== false && manifestCrossings.length > 0) {
+        const first = manifestCrossings[0];
+        throw new ArchiveCapacityError(
+            first.dimension,
+            first.observed,
+            first.supported,
+            context.counters,
+            manifestCrossings
+        );
     }
 
     const sourceId = options.sourceId;

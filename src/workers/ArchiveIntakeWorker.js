@@ -1,10 +1,25 @@
 importScripts('../libs/jszip.min.js');
+importScripts('../modules/workerProtocol.js');
 
 let activeRequest = null;
 let archiveModulePromise = null;
 
 self.onmessage = event => {
     const message = event.data ?? {};
+    try {
+        WorkerProtocol.validateWorkerCommand(message);
+    } catch (error) {
+        postMessage({
+            type: 'failed',
+            requestId: typeof message.requestId === 'string' && message.requestId
+                ? message.requestId
+                : 'invalid-request',
+            category: 'schema',
+            reasonCode: 'invalid-worker-message',
+            error: error.message
+        });
+        return;
+    }
     if (message.type === 'cancel') {
         if (activeRequest?.id === message.requestId) {
             activeRequest.cancelled = true;
@@ -28,7 +43,13 @@ self.onmessage = event => {
         id: message.requestId,
         cancelled: false,
         stream: null,
-        working: null
+        working: null,
+        progressReporter: WorkerProtocol.createProgressReporter({
+            requestId: message.requestId,
+            operation: 'archive-intake',
+            unit: 'entries',
+            post: progressMessage => postMessage(progressMessage)
+        })
     };
     activeRequest = request;
     runArchiveRequest(request, message);
@@ -108,6 +129,14 @@ async function runArchiveRequest(request, message) {
             requestId: request.id,
             effectiveBoundaries: message.overrideCapacity === true ? {} : (message.boundaries ?? {})
         });
+        request.progressReporter.report({
+            phase: 'loading-archive',
+            completed: 0,
+            total: 0,
+            counters: {
+                compressedBytes
+            }
+        }, true);
 
         let zip;
         try {
@@ -148,11 +177,12 @@ async function runArchiveRequest(request, message) {
                 streamEntry(request, entry.zipEntry, onChunk),
             onProgress: progress => {
                 if (isActive(request)) {
-                    postMessage({
-                        type: 'progress',
-                        requestId: request.id,
-                        ...progress
-                    });
+                    request.progressReporter.report({
+                        ...progress,
+                        completed: progress.completedEntries,
+                        total: progress.totalEntries,
+                        counters: progress.counters
+                    }, progress.phase === 'ready');
                 }
             }
         });
@@ -176,7 +206,8 @@ async function runArchiveRequest(request, message) {
                 dimension: error.dimension,
                 observed: error.observed,
                 supported: error.supported,
-                accounting: error.counters
+                accounting: error.counters,
+                crossings: error.crossings
             });
         } else {
             postMessage({
@@ -189,6 +220,7 @@ async function runArchiveRequest(request, message) {
             });
         }
     } finally {
+        request.progressReporter.stop();
         request.stream?.pause();
         request.stream = null;
         request.working = null;

@@ -1,11 +1,27 @@
 importScripts('../libs/turf.min.js');
 importScripts('../libs/osmtogeojson.js');
 importScripts('../modules/workerDestination.js');
+importScripts('../modules/workerProtocol.js');
 
 let activeRequest = null;
 
 onmessage = function (event) {
     const message = event.data ?? {};
+    try {
+        WorkerProtocol.validateWorkerCommand({
+            ...message,
+            type: message.type ?? 'start'
+        });
+    } catch (error) {
+        postMessage({
+            type: 'failed',
+            requestId: typeof message.requestId === 'string' && message.requestId
+                ? message.requestId
+                : 'invalid-request',
+            error: error.message
+        });
+        return;
+    }
     if (message.type === 'cancel') {
         if (!activeRequest || message.requestId === activeRequest.id) {
             activeRequest?.controller.abort();
@@ -13,10 +29,23 @@ onmessage = function (event) {
         }
         return;
     }
+    if (message.type === 'pause' || message.type === 'resume') {
+        postMessage({ type: 'pauseUnsupported', requestId: message.requestId });
+        return;
+    }
 
-    const requestId = message.requestId || crypto.randomUUID();
+    const requestId = message.requestId;
     activeRequest?.controller.abort();
-    const request = { id: requestId, controller: new AbortController() };
+    const request = {
+        id: requestId,
+        controller: new AbortController(),
+        progressReporter: WorkerProtocol.createProgressReporter({
+            requestId,
+            operation: 'osm-search',
+            unit: 'features',
+            post: progressMessage => postMessage(progressMessage)
+        })
+    };
     activeRequest = request;
     runRequest(request, message);
 };
@@ -47,6 +76,9 @@ async function runRequest(request, options) {
         ensureActive(request);
         postProgress(request, 'converting', 35, { featuresSeen: 0, intersectionChecks: 0 });
         const converted = osmtogeojson(osmData);
+        request.featureTotal = Array.isArray(converted?.features)
+            ? converted.features.length
+            : 0;
         ensureActive(request);
         const result = await filterNewData(converted, options, request);
         ensureActive(request);
@@ -67,6 +99,7 @@ async function runRequest(request, options) {
             });
         }
     } finally {
+        request.progressReporter.stop();
         if (isActive(request)) {
             activeRequest = null;
         }
@@ -144,13 +177,15 @@ async function filterNewData(data, options, request) {
 
 function postProgress(request, phase, percent, accounting) {
     if (isActive(request)) {
-        postMessage({
-            type: 'progress',
-            requestId: request.id,
+        const completed = accounting.featuresSeen ?? 0;
+        request.progressReporter.report({
             phase,
+            completed,
+            total: Math.max(completed, request.featureTotal ?? completed),
             percent: Math.max(0, Math.min(99, percent)),
-            accounting
-        });
+            accounting,
+            counters: accounting
+        }, phase === 'converting');
     }
 }
 

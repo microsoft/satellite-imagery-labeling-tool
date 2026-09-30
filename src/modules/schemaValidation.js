@@ -1,6 +1,11 @@
 const DANGEROUS_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 const LAYER_TYPES = new Set(['TileLayer', 'ImageLayer', 'OgcMapLayer']);
 
+export const DANGEROUS_KEY_POLICY = Object.freeze({
+    action: 'reject-record',
+    reasonCode: 'dangerous-key'
+});
+
 export class SchemaValidationError extends Error {
     constructor(message, reasonCode = 'invalid-schema', path = '$') {
         super(message);
@@ -58,8 +63,8 @@ export function assertNoDangerousKeys(value, path = '$', seen = new Set()) {
         const childPath = Array.isArray(value) ? `${path}[${key}]` : `${path}.${key}`;
         if (DANGEROUS_KEYS.has(key)) {
             throw new SchemaValidationError(
-                `The field ${childPath} is not allowed.`,
-                'dangerous-key',
+                `The record contains a disallowed field at ${childPath}.`,
+                DANGEROUS_KEY_POLICY.reasonCode,
                 childPath
             );
         }

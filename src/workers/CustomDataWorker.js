@@ -1,10 +1,28 @@
 importScripts('../libs/turf.min.js');
+importScripts('../libs/clarinet.js');
 importScripts('../modules/workerDestination.js');
+importScripts('../modules/workerProtocol.js');
 
 let activeRequest = null;
+const DANGEROUS_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 
 onmessage = function (event) {
     const message = event.data ?? {};
+    try {
+        WorkerProtocol.validateWorkerCommand({
+            ...message,
+            type: message.type ?? 'start'
+        });
+    } catch (error) {
+        postMessage({
+            type: 'failed',
+            requestId: typeof message.requestId === 'string' && message.requestId
+                ? message.requestId
+                : 'invalid-request',
+            error: error.message
+        });
+        return;
+    }
     if (message.type === 'cancel') {
         if (!activeRequest || message.requestId === activeRequest.id) {
             activeRequest?.controller.abort();
@@ -12,14 +30,22 @@ onmessage = function (event) {
         }
         return;
     }
+    if (message.type === 'pause' || message.type === 'resume') {
+        postMessage({
+            type: 'pauseUnsupported',
+            requestId: message.requestId
+        });
+        return;
+    }
 
-    const requestId = message.requestId || crypto.randomUUID();
+    const requestId = message.requestId;
     activeRequest?.controller.abort();
     const request = {
         id: requestId,
         controller: new AbortController(),
         cancelled: false
     };
+    request.progressReporters = new Map();
     activeRequest = request;
     runRequest(request, message);
 };
@@ -67,8 +93,20 @@ async function runRequest(request, options) {
             options,
             conditionalIdentity
         );
+        request.declaredBytes = received.declaredBytes ?? received.bytesRead;
         ensureActive(request);
-        const result = await filterNewData(received.data, options, request);
+        request.featureTotal = Array.isArray(received.data?.features)
+            ? received.filterAccounting.featuresSeen
+            : 0;
+        const result = {
+            features: received.data.features,
+            accounting: received.filterAccounting
+        };
+        postProgress(request, 'filtered', 99, {
+            featuresSeen: result.accounting.featuresSeen,
+            featuresAccepted: result.accounting.featuresAccepted,
+            intersectionChecks: result.accounting.intersectionChecks
+        });
         result.accounting.responseBytes = received.bytesRead;
         ensureActive(request);
         postMessage({
@@ -88,7 +126,8 @@ async function runRequest(request, options) {
                 dimension: error.dimension,
                 observed: error.observed,
                 supported: error.supported,
-                conditionalIdentity: error.conditionalIdentity
+                conditionalIdentity: error.conditionalIdentity,
+                crossings: error.crossings
             });
         } else {
             postMessage({
@@ -98,6 +137,9 @@ async function runRequest(request, options) {
             });
         }
     } finally {
+        for (const reporter of request.progressReporters.values()) {
+            reporter.stop();
+        }
         if (isActive(request)) {
             activeRequest = null;
         }
@@ -105,13 +147,14 @@ async function runRequest(request, options) {
 }
 
 class CapacityError extends Error {
-    constructor(dimension, observed, supported, conditionalIdentity) {
+    constructor(dimension, observed, supported, conditionalIdentity, crossings = null) {
         super(`Custom data exceeded the ${dimension} boundary.`);
         this.name = 'CapacityError';
         this.dimension = dimension;
         this.observed = observed;
         this.supported = supported;
         this.conditionalIdentity = conditionalIdentity;
+        this.crossings = crossings ?? [{ dimension, observed, supported }];
     }
 }
 
@@ -156,6 +199,7 @@ function enforceResponseBoundary(options, observed, conditionalIdentity) {
 
 async function readJsonResponse(response, request, options, conditionalIdentity) {
     const declaredBytes = Number(response.headers.get('content-length')) || 0;
+    request.declaredBytes = declaredBytes;
     try {
         enforceResponseBoundary(options, declaredBytes, conditionalIdentity);
     } catch (error) {
@@ -163,19 +207,13 @@ async function readJsonResponse(response, request, options, conditionalIdentity)
         throw error;
     }
     if (!response.body?.getReader) {
-        const text = await response.text();
-        const bytesRead = new TextEncoder().encode(text).byteLength;
-        enforceResponseBoundary(options, bytesRead, conditionalIdentity);
-        postProgress(request, 'received', 45, { bytesRead });
-        return {
-            data: JSON.parse(text),
-            bytesRead
-        };
+        throw new Error('Custom data intake requires a streaming response body.');
     }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let text = '';
+    const featureFilter = createFeatureFilter(options, request);
+    const parser = createIncrementalJsonParser(featureFilter.consider);
     let bytesRead = 0;
     try {
         while (true) {
@@ -186,89 +224,203 @@ async function readJsonResponse(response, request, options, conditionalIdentity)
             }
             bytesRead += value.byteLength;
             enforceResponseBoundary(options, bytesRead, conditionalIdentity);
-            text += decoder.decode(value, { stream: true });
+            const decoded = decoder.decode(value, { stream: true });
+            for (let offset = 0; offset < decoded.length; offset += 64 * 1024) {
+                ensureActive(request);
+                parser.write(decoded.slice(offset, offset + 64 * 1024));
+                await yieldToWorker();
+            }
             const percent = declaredBytes > 0
                 ? Math.min(45, Math.floor(bytesRead / declaredBytes * 45))
                 : Math.min(44, 5 + Math.floor(Math.log2(bytesRead + 1)));
-            postProgress(request, 'receiving', percent, { bytesRead });
+            postProgress(request, 'receiving', percent, {
+                bytesRead,
+                featuresSeen: featureFilter.accounting.featuresSeen,
+                intersectionChecks: featureFilter.accounting.intersectionChecks
+            });
         }
     } catch (error) {
         await reader.cancel();
         throw error;
     }
 
-    text += decoder.decode();
+    parser.write(decoder.decode());
     ensureActive(request);
-    const data = JSON.parse(text);
-    text = '';
+    const data = parser.finish();
     postProgress(request, 'received', 45, { bytesRead });
-    return { data, bytesRead };
+    return {
+        data,
+        bytesRead,
+        declaredBytes,
+        filterAccounting: featureFilter.accounting
+    };
 }
 
-async function filterNewData(data, options, request) {
-    if (!data || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
-        throw new TypeError('Custom data must be a GeoJSON FeatureCollection.');
-    }
+function createIncrementalJsonParser(considerFeature) {
+    const parser = clarinet.parser();
+    const stack = [];
+    let root;
+    let completed = false;
 
-    const filtered = [];
-    const existing = Array.isArray(options.existingGeoms) ? options.existingGeoms : [];
-    let intersectionChecks = 0;
-
-    for (let index = 0; index < data.features.length; index++) {
-        ensureActive(request);
-        const feature = data.features[index];
-        const geometryType = feature?.geometry?.type || '';
-        const allowed = (geometryType.includes('LineString') && options.allowLines)
-            || (geometryType.includes('Polygon') && options.allowPolygons);
-
-        if (allowed) {
-            const inArea = !options.aoi?.type
-                || turf.booleanIntersects(options.aoi, feature.geometry);
-            intersectionChecks++;
-            if (inArea) {
-                let overlaps = false;
-                for (const existingFeature of existing) {
-                    ensureActive(request);
-                    intersectionChecks++;
-                    if (turf.booleanIntersects(existingFeature.geometry, feature.geometry)) {
-                        overlaps = true;
-                        break;
-                    }
-                }
-                if (!overlaps) {
-                    filtered.push(feature);
-                }
+    const append = value => {
+        if (stack.length === 0) {
+            if (root !== undefined) {
+                throw new SyntaxError('Custom data must contain one JSON value.');
             }
+            root = value;
+            return;
         }
+        const parent = stack[stack.length - 1];
+        if (parent.type === 'array') {
+            parent.value.push(value);
+        } else {
+            if (parent.key === null) {
+                throw new SyntaxError('Custom data contains an object value without a key.');
+            }
+            parent.value[parent.key] = value;
+            parent.key = null;
+        }
+    };
 
-        if (index % 50 === 0) {
-            postProgress(request, 'filtering', 45 + Math.floor((index + 1) / Math.max(1, data.features.length) * 54), {
-                featuresSeen: index + 1,
-                intersectionChecks
-            });
-            await yieldToWorker();
+    parser.onopenobject = firstKey => {
+        if (DANGEROUS_KEYS.has(firstKey)) {
+            throw new SyntaxError(`Custom data contains the disallowed key ${firstKey}.`);
         }
-    }
+        const value = {};
+        append(value);
+        stack.push({ type: 'object', value, key: firstKey ?? null });
+    };
+    parser.onkey = key => {
+        if (DANGEROUS_KEYS.has(key)) {
+            throw new SyntaxError(`Custom data contains the disallowed key ${key}.`);
+        }
+        stack[stack.length - 1].key = key;
+    };
+    parser.onopenarray = () => {
+        const parent = stack[stack.length - 1];
+        const isFeatureArray = stack.length === 1
+            && parent?.type === 'object'
+            && parent.value === root
+            && parent.key === 'features';
+        const value = [];
+        append(value);
+        stack.push({ type: 'array', value, key: null, isFeatureArray });
+    };
+    parser.onvalue = value => {
+        const parent = stack[stack.length - 1];
+        append(value);
+        if (parent?.isFeatureArray && considerFeature(value) !== true) {
+            parent.value.pop();
+        }
+    };
+    parser.oncloseobject = () => {
+        const frame = stack[stack.length - 1];
+        const parent = stack[stack.length - 2];
+        if (parent?.isFeatureArray && considerFeature(frame.value) !== true) {
+            parent.value.pop();
+        }
+        stack.pop();
+    };
+    parser.onclosearray = () => {
+        stack.pop();
+    };
+    parser.onend = () => {
+        completed = true;
+    };
+    parser.onerror = error => {
+        throw error;
+    };
 
     return {
-        features: filtered,
-        accounting: {
-            featuresSeen: data.features.length,
-            featuresAccepted: filtered.length,
-            intersectionChecks
+        write(value) {
+            if (value) {
+                parser.write(value);
+            }
+        },
+        finish() {
+            parser.close();
+            if (!completed || root === undefined || stack.length !== 0) {
+                throw new SyntaxError('Custom data response is incomplete.');
+            }
+            if (!root || root.type !== 'FeatureCollection' || !Array.isArray(root.features)) {
+                throw new TypeError('Custom data must be a GeoJSON FeatureCollection.');
+            }
+            return root;
+        }
+    };
+}
+
+function createFeatureFilter(options, request) {
+    const existing = Array.isArray(options.existingGeoms) ? options.existingGeoms : [];
+    const accounting = {
+        featuresSeen: 0,
+        featuresAccepted: 0,
+        peakRetainedFeatures: 0,
+        intersectionChecks: 0
+    };
+
+    return {
+        accounting,
+        consider(feature) {
+            ensureActive(request);
+            accounting.featuresSeen++;
+            const geometryType = feature?.geometry?.type || '';
+            const allowed = (geometryType.includes('LineString') && options.allowLines)
+                || (geometryType.includes('Polygon') && options.allowPolygons);
+
+            if (!allowed) {
+                return false;
+            }
+            const inArea = !options.aoi?.type
+                || turf.booleanIntersects(options.aoi, feature.geometry);
+            accounting.intersectionChecks++;
+            if (!inArea) {
+                return false;
+            }
+            for (const existingFeature of existing) {
+                ensureActive(request);
+                accounting.intersectionChecks++;
+                if (turf.booleanIntersects(existingFeature.geometry, feature.geometry)) {
+                    return false;
+                }
+            }
+            accounting.featuresAccepted++;
+            accounting.peakRetainedFeatures = Math.max(
+                accounting.peakRetainedFeatures,
+                accounting.featuresAccepted
+            );
+            return true;
         }
     };
 }
 
 function postProgress(request, phase, percent, accounting) {
     if (isActive(request)) {
-        postMessage({
-            type: 'progress',
-            requestId: request.id,
+        const receiving = phase === 'requesting' || phase === 'receiving' || phase === 'received';
+        const unit = receiving ? 'bytes' : 'features';
+        let reporter = request.progressReporters.get(unit);
+        if (!reporter) {
+            reporter = WorkerProtocol.createProgressReporter({
+                requestId: request.id,
+                operation: 'custom-data',
+                unit,
+                post: progressMessage => postMessage(progressMessage)
+            });
+            request.progressReporters.set(unit, reporter);
+        }
+        const completed = receiving
+            ? (accounting.bytesRead ?? 0)
+            : (accounting.featuresSeen ?? 0);
+        reporter.report({
             phase,
+            completed,
+            total: receiving
+                ? Math.max(completed, request.declaredBytes ?? completed)
+                : Math.max(completed, request.featureTotal ?? completed),
             percent: Math.max(0, Math.min(99, percent)),
-            accounting
-        });
+            accounting,
+            counters: accounting
+        }, phase === 'received');
     }
 }
 

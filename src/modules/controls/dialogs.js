@@ -18,10 +18,15 @@ export function confirmCapacityOverride({ attempt, source, acknowledge, warning 
 
         const description = document.createElement('p');
         description.id = 'capacity-warning-description';
+        const dimensions = Object.entries(attempt.measuredDimensions ?? {})
+            .map(([name, values]) =>
+                `${name}: ${values.observed} observed; ${values.supported} configured`)
+            .join('; ');
         setText(
             description,
-            `${source.displayName} exceeded the ${attempt.dimension} boundary `
-            + `(${attempt.observedValue} observed; ${attempt.supportedValue} configured). `
+            `${source.displayName} exceeded configured processing boundaries `
+            + `(${dimensions || `${attempt.dimension}: ${attempt.observedValue} observed; `
+                + `${attempt.supportedValue} configured`}). `
             + 'A single foreground retry disables the supported-capacity boundary and may freeze '
             + 'or terminate this page and lose unsaved in-memory work. '
             + 'Cancellation is best effort and may stop responding. '

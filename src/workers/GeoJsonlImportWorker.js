@@ -1,13 +1,22 @@
 'use strict';
 
-importScripts('../libs/clarinet.js', '../modules/geoJsonlParser.js');
+importScripts(
+    '../libs/clarinet.js',
+    '../modules/geoJsonlParser.js',
+    '../modules/workerProtocol.js'
+);
 
 const operations = new Map();
 const CHUNK_SIZE = 64 * 1024;
 const PROGRESS_INTERVAL_MS = 100;
 
 function post(requestId, type, detail = {}, transfer = []) {
-    self.postMessage({ type, requestId, ...detail }, transfer);
+    const message = WorkerProtocol.validateWorkerEvent({
+        type,
+        requestId,
+        ...detail
+    });
+    self.postMessage(message, transfer);
 }
 
 function transferListForCompactGeometry(compact) {
@@ -59,6 +68,13 @@ function progressDetail(operation, parser, phase = 'parsing') {
     };
 }
 
+function monotonicProgressCounters(parser) {
+    const counters = parser.accounting.snapshot();
+    delete counters.nestingDepth;
+    delete counters.recordBytes;
+    return counters;
+}
+
 async function processFile(operation, message) {
     const parser = new GeoJsonlParser.IncrementalGeoJsonlParser({
         clarinet,
@@ -68,11 +84,23 @@ async function processFile(operation, message) {
     });
     const decoder = new TextDecoder();
     let lastProgress = 0;
+    const progressReporter = WorkerProtocol.createProgressReporter({
+        requestId: operation.requestId,
+        operation: 'geojsonl-intake',
+        unit: 'bytes',
+        post: (progressMessage) => self.postMessage(progressMessage)
+    });
 
     post(operation.requestId, 'started', {
         effectiveBoundaries: { ...(message.boundaries || {}) },
         overrideCapacity: message.overrideCapacity === true
     });
+    progressReporter.report({
+        ...progressDetail(operation, parser, 'reading'),
+        completed: operation.offset,
+        total: operation.file.size,
+        counters: monotonicProgressCounters(parser)
+    }, true);
 
     try {
         while (operation.offset < operation.file.size && !parser.stopped) {
@@ -94,7 +122,12 @@ async function processFile(operation, message) {
 
             const now = performance.now();
             if (now - lastProgress >= PROGRESS_INTERVAL_MS || operation.offset === operation.file.size) {
-                post(operation.requestId, 'progress', progressDetail(operation, parser));
+                progressReporter.report({
+                    ...progressDetail(operation, parser),
+                    completed: operation.offset,
+                    total: operation.file.size,
+                    counters: monotonicProgressCounters(parser)
+                }, operation.offset === operation.file.size);
                 lastProgress = now;
             }
             await nextTask();
@@ -165,7 +198,8 @@ async function processFile(operation, message) {
                 bytesScanned: operation.offset,
                 invalidRecordsBeforeCandidate: parser.invalidCount,
                 sourceLabel: operation.file.name,
-                counters: error.counters
+                counters: error.counters,
+                crossings: error.crossings
             });
             return;
         }
@@ -181,12 +215,34 @@ async function processFile(operation, message) {
             }
         });
     } finally {
+        progressReporter.stop();
         operations.delete(operation.requestId);
     }
 }
 
 self.onmessage = event => {
     const message = event.data || {};
+    try {
+        WorkerProtocol.validateWorkerCommand(message);
+    } catch (error) {
+        post(
+            typeof message.requestId === 'string' && message.requestId
+                ? message.requestId
+                : 'invalid-request',
+            'failed',
+            {
+                diagnostic: {
+                    category: 'schema',
+                    reasonCode: 'invalid-worker-message',
+                    totalCount: 1,
+                    sampleIdentifiers: [],
+                    bytesScanned: 0,
+                    messageArguments: { message: error.message }
+                }
+            }
+        );
+        return;
+    }
     if (message.type === 'start') {
         if (!message.requestId || !(message.source instanceof Blob)) {
             post(message.requestId, 'failed', {

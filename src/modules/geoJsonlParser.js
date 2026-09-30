@@ -2,6 +2,10 @@
     'use strict';
 
     const DANGEROUS_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+    const DANGEROUS_KEY_POLICY = Object.freeze({
+        action: 'reject-record',
+        reasonCode: 'dangerous-key'
+    });
     const SAMPLE_LIMIT = 5;
     const COUNTER_NAMES = [
         'recordBytes',
@@ -64,6 +68,7 @@
             this.boundaries = { ...(boundaries || {}) };
             this.comparisonsEnabled = comparisonsEnabled !== false;
             this.counters = createCounters();
+            this.crossings = new Map();
         }
 
         resetRecordBytes() {
@@ -85,15 +90,26 @@
                 );
             }
 
-            const supported = this.boundaries[dimension];
-            if (this.comparisonsEnabled
-                && Number.isFinite(supported)
-                && this.counters[dimension] > supported) {
+            if (this.comparisonsEnabled) {
+                for (const name of COUNTER_NAMES) {
+                    const supported = this.boundaries[name];
+                    const observed = this.counters[name];
+                    if (Number.isFinite(supported) && observed > supported) {
+                        this.crossings.set(name, {
+                            dimension: name,
+                            observed,
+                            supported
+                        });
+                    }
+                }
+            }
+
+            if (this.crossings.size > 0) {
+                const crossings = Array.from(this.crossings.values());
                 throw new CapacityError({
-                    dimension,
-                    observed: this.counters[dimension],
-                    supported,
-                    counters: this.snapshot()
+                    ...crossings[0],
+                    counters: this.snapshot(),
+                    crossings
                 });
             }
         }
@@ -351,8 +367,8 @@
             const rejectKey = key => {
                 if (DANGEROUS_KEYS.has(key)) {
                     throw new GeoJsonlParseError(
-                        'dangerous-key',
-                        `The key ${key} is not allowed.`,
+                        DANGEROUS_KEY_POLICY.reasonCode,
+                        `The record contains the disallowed key ${key}.`,
                         this.recordNumber
                     );
                 }
@@ -709,6 +725,7 @@
 
     global.GeoJsonlParser = Object.freeze({
         CapacityError,
+        DANGEROUS_KEY_POLICY,
         GeoJsonlParseError,
         IncrementalGeoJsonlParser,
         compactGeometryToGeoJson

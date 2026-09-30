@@ -26,6 +26,26 @@ header {
     background-color: var(--header_bg_color);
 }
 
+.local-server-guidance,
+.operation-notice {
+    position: fixed;
+    z-index: 10000;
+    top: 8px;
+    left: 50%;
+    max-width: min(720px, calc(100% - 32px));
+    transform: translateX(-50%);
+    padding: 8px 12px;
+    border: 1px solid var(--btn_primary_color);
+    border-radius: 6px;
+    color: var(--font_color);
+    background: var(--main_bg_color);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 30%);
+}
+
+.local-server-guidance .text-btn-round {
+    margin: 0 0 0 12px;
+}
+
 header a {
     display: block !important;
     margin-top: 10px !important;

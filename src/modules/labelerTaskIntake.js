@@ -90,17 +90,20 @@ async function approveTaskDecision(value, options) {
     if (decision.reason === 'private-address-approval-required') {
         const approved = await options.confirmPrivateDestination?.(decision);
         if (approved !== true) {
-            throw new TypeError('The private task destination was not approved.');
+            return Object.freeze({ status: 'declined', decision });
         }
         decision = createTaskDecision(value, options, 'private-explicitly-approved');
     } else if (decision.reason === 'task-origin-approval-required') {
         const approved = await options.discloseTaskOrigin?.(decision);
         if (approved !== true) {
-            throw new TypeError('The task destination was not approved.');
+            return Object.freeze({ status: 'declined', decision });
         }
         decision = createTaskDecision(value, options, 'task-load-approved');
     }
-    return requireAllowedDestination(decision);
+    return Object.freeze({
+        status: 'allowed',
+        decision: requireAllowedDestination(decision)
+    });
 }
 
 export async function loadValidatedTaskFromUrl(value, options = {}) {
@@ -108,7 +111,11 @@ export async function loadValidatedTaskFromUrl(value, options = {}) {
         throw new TypeError('A fetch implementation is required.');
     }
 
-    const decision = await approveTaskDecision(value, options);
+    const approval = await approveTaskDecision(value, options);
+    if (approval.status === 'declined') {
+        return approval;
+    }
+    const decision = approval.decision;
     const response = await options.fetchImpl(decision.resolvedUrl, {
         redirect: 'error'
     });
@@ -122,7 +129,7 @@ export async function loadValidatedTaskFromUrl(value, options = {}) {
         defaultTask: options.defaultTask,
         destinationDecisions: [decision]
     });
-    return Object.freeze({ decision, validated });
+    return Object.freeze({ status: 'ready', decision, validated });
 }
 
 export function validateLabelerAutosave(envelope, task, options = {}) {

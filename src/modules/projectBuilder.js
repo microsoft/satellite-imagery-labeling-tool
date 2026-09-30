@@ -6,8 +6,10 @@ import { ProjectUtils } from './projectUtils.js';
 import { SimpleLayerControl, SearchBarControl, SimpleContentControl } from './controls/customMapControls.js';
 import { AddLayerDialog, ContentDialog, confirmCapacityOverride, confirmPrivateDestination } from './controls/dialogs.js';
 import { SimpleBinding } from './simpleBinding.js'
-import { renderInstruction, renderSafeMarkdown } from './safeRendering.js';
+import { renderSafeMarkdown, setText } from './safeRendering.js';
+import { showDestinationDeclinedNotice } from './operationNotice.js';
 import { isMatchingReadyResult, startGeoJsonlIntake } from './geoJsonlIntake.js';
+import { presentField } from './presentationContexts.js';
 import './geoJsonlParser.js';
 
 /**
@@ -64,7 +66,7 @@ export class ProjectBuilderApp {
         const hasAZMapAuth = Utils.isAzureMapsAuthValid(mapSettings.azureMapsAuth);
         this.#hasAZMapAuth = hasAZMapAuth;
 
-        document.querySelector('title').innerText = appSettings.builderTitle;
+        setText(document.querySelector('title'), appSettings.builderTitle);
 
         //Initialize a map instance.
         self.map = Utils.createMap('myMap', mapSettings.azureMapsAuth);
@@ -246,8 +248,12 @@ export class ProjectBuilderApp {
         const preview = document.getElementById('instructionsPreview');
         const instructions = document.getElementById('instructions');
         instructions.addEventListener('keyup', () => {
-            const rendered = renderSafeMarkdown(instructions.value);
-            renderInstruction(preview, rendered);
+            presentField(
+                preview,
+                'project.instructions',
+                'builder-instructions-preview',
+                instructions.value
+            );
         });
 
         
@@ -283,9 +289,12 @@ export class ProjectBuilderApp {
     /** Validates the fields of step 1 and determines if user can proceed to step 2. */
     #validateStep1() {
         const props = this.#config.properties;
+        const projectName = document.getElementById('projectName').value.trim();
+        props.project_name = projectName;
+        this.#config.id = projectName;
 
         //Must include a project name.
-        document.querySelector('#step-1 .nextBtn').disabled = (!props.project_name || props.project_name.trim() === '');
+        document.querySelector('#step-1 .nextBtn').disabled = projectName === '';
     }
 
     /**
@@ -463,16 +472,32 @@ export class ProjectBuilderApp {
         };
     }
 
-    #setAreaImportStatus(message, visible = true) {
+    #setAreaImportSource(message, visible = true) {
         const container = document.getElementById('areaImportStatus');
         container.hidden = !visible;
-        document.getElementById('areaImportMessage').textContent = message;
+        presentField(
+            document.getElementById('areaImportMessage'),
+            'intake.source_name',
+            'builder-area-import-source',
+            message
+        );
+    }
+
+    #setAreaImportDiagnostic(message, visible = true) {
+        const container = document.getElementById('areaImportStatus');
+        container.hidden = !visible;
+        presentField(
+            document.getElementById('areaImportMessage'),
+            'intake.diagnostic',
+            'builder-area-import-diagnostic',
+            message
+        );
     }
 
     #startAreaGeoJsonlImport(file) {
         const self = this;
         self.#areaImportOperation?.cancel();
-        self.#setAreaImportStatus(`Reading ${file.name}...`);
+        self.#setAreaImportSource(`Reading ${file.name}...`);
 
         const operation = startGeoJsonlIntake(file, {
             mode: 'builder',
@@ -482,13 +507,13 @@ export class ProjectBuilderApp {
                     return;
                 }
                 if (message.type === 'progress') {
-                    self.#setAreaImportStatus(
+                    self.#setAreaImportDiagnostic(
                         `Read ${message.bytesRead.toLocaleString()} of ${message.knownTotalBytes.toLocaleString()} bytes; ${message.recordsSeen} records checked.`
                     );
                 } else if (message.type === 'paused') {
-                    self.#setAreaImportStatus(`Paused after ${message.checkpoint.recordsSeen} records.`);
+                    self.#setAreaImportDiagnostic(`Paused after ${message.checkpoint.recordsSeen} records.`);
                 } else if (message.type === 'resumed') {
-                    self.#setAreaImportStatus('GeoJSONL import resumed.');
+                    self.#setAreaImportDiagnostic('GeoJSONL import resumed.');
                 }
             }
         });
@@ -508,7 +533,7 @@ export class ProjectBuilderApp {
                 geometry
             };
             if (self.#commitImportedArea(feature)) {
-                self.#setAreaImportStatus(
+                self.#setAreaImportDiagnostic(
                     `Imported the first valid ${geometry.type} after checking ${message.summary.recordsSeen} records.`
                 );
             }
@@ -517,7 +542,7 @@ export class ProjectBuilderApp {
                 || error.result?.type === 'cancelled') {
                 return;
             }
-            self.#setAreaImportStatus('GeoJSONL import failed.');
+            self.#setAreaImportDiagnostic('GeoJSONL import failed.');
             alert(error.message);
         }).finally(() => {
             if (self.#areaImportOperation?.requestId === operation.requestId) {
@@ -695,7 +720,7 @@ export class ProjectBuilderApp {
             row.appendChild(cell);
 
             cell = document.createElement('td');
-            cell.innerText = name;
+            presentField(cell, 'class.name', 'builder-class-table', name);
             row.appendChild(cell);
 
             if (bindingObj.colors) {
@@ -1093,6 +1118,10 @@ export class ProjectBuilderApp {
                 cancel: 'Cancel project load'
             })
         }).then(project => {
+            if (project.status === 'declined') {
+                showDestinationDeclinedNotice('Project load', project.decision);
+                return;
+            }
             //Load the area of interest into the drawing manager.
             self.#drawingManager.getSource().setShapes(project.aoi);
 
@@ -1124,7 +1153,7 @@ export class ProjectBuilderApp {
 
             const customDataSwitch = document.getElementById('customDataSwitch');
             customDataSwitch.checked = (props.customDataService && props.customDataService !== '');
-            customDataSwitch.onclick();
+            customDataSwitch.dispatchEvent(new Event('click'));
 
             //Trigger instructions preview to update.
             elms.instructions.dispatchEvent(new Event('keyup'));

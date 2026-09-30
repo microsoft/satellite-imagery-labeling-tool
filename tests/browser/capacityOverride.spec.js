@@ -52,6 +52,38 @@ test('injected local GeoJSONL boundary stops normal intake and one comparison-fr
     });
 });
 
+test('GeoJSONL worker reports every dimension crossed by one accounting update', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+        const { startGeoJsonlIntake } = await import('/src/modules/geoJsonlIntake.js');
+        const file = new File([JSON.stringify({
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'Point', coordinates: [0, 0] }
+        })], 'multi-capacity.geojsonl');
+
+        try {
+            await startGeoJsonlIntake(file, {
+                mode: 'labeler',
+                boundaries: {
+                    nestingDepth: 0,
+                    maxObservedDepth: 0
+                },
+                workerFactory: () => new Worker('/src/workers/GeoJsonlImportWorker.js'),
+                chunkSize: 8
+            }).completion;
+        } catch (error) {
+            return error.result;
+        }
+        return null;
+    });
+
+    expect(result.type).toBe('capacityExceeded');
+    expect(result.crossings).toEqual([
+        { dimension: 'nestingDepth', observed: 1, supported: 0 },
+        { dimension: 'maxObservedDepth', observed: 1, supported: 0 }
+    ]);
+});
+
 test('comparison-free retry still rejects non-capacity validation failures', async ({ page }) => {
     const result = await page.evaluate(async () => {
         const { startGeoJsonlIntake } = await import('/src/modules/geoJsonlIntake.js');

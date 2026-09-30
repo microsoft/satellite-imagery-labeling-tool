@@ -52,6 +52,8 @@ const STAGED_KINDS = new Set([
 ]);
 
 const SAMPLE_LIMIT = 5;
+const SAMPLE_IDENTIFIER_LIMIT = 96;
+const TRUNCATION_MARKER = '...[truncated]';
 
 function requireString(value, name) {
     if (typeof value !== 'string' || value.trim() === '') {
@@ -61,6 +63,42 @@ function requireString(value, name) {
 
 function isRecord(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function truncateIdentifier(value) {
+    const identifier = String(value);
+    if (identifier.length <= SAMPLE_IDENTIFIER_LIMIT) {
+        return identifier;
+    }
+    return identifier.slice(
+        0,
+        SAMPLE_IDENTIFIER_LIMIT - TRUNCATION_MARKER.length
+    ) + TRUNCATION_MARKER;
+}
+
+function createMeasuredDimensions(input) {
+    const dimensions = isRecord(input.measuredDimensions)
+        ? input.measuredDimensions
+        : (input.capacityDimension ? {
+            [input.capacityDimension]: {
+                observed: input.observedValue,
+                supported: input.supportedValue
+            }
+        } : {});
+    return Object.freeze(Object.fromEntries(
+        Object.entries(dimensions).map(([name, values]) => {
+            requireString(name, 'measured dimension');
+            if (!isRecord(values)
+                || !Number.isFinite(values.observed)
+                || !Number.isFinite(values.supported)) {
+                throw new TypeError(`Measured dimension ${name} requires finite values.`);
+            }
+            return [name, Object.freeze({
+                observed: values.observed,
+                supported: values.supported
+            })];
+        })
+    ));
 }
 
 export function createUntrustedSource(input) {
@@ -108,13 +146,14 @@ export function createIntakeDiagnostic(input) {
             ? input.totalCount
             : identifiers.length,
         sampleIdentifiers: Object.freeze(
-            identifiers.slice(0, SAMPLE_LIMIT).map(value => String(value))
+            identifiers.slice(0, SAMPLE_LIMIT).map(truncateIdentifier)
         ),
         bytesScanned: Number.isFinite(input.bytesScanned) ? input.bytesScanned : 0,
         messageArguments: Object.freeze({ ...(input.messageArguments ?? {}) }),
         observedValue: input.observedValue,
         supportedValue: input.supportedValue,
-        capacityDimension: input.capacityDimension
+        capacityDimension: input.capacityDimension,
+        measuredDimensions: createMeasuredDimensions(input)
     });
 }
 
@@ -285,6 +324,22 @@ export class CapacityOverrideAttempt {
         this.dimension = input.dimension;
         this.observedValue = input.observedValue;
         this.supportedValue = input.supportedValue;
+        this.measuredDimensions = createMeasuredDimensions({
+            measuredDimensions: input.measuredDimensions ?? (
+                Array.isArray(input.crossings)
+                    ? Object.fromEntries(input.crossings.map(crossing => [
+                        crossing.dimension,
+                        {
+                            observed: crossing.observed,
+                            supported: crossing.supported
+                        }
+                    ]))
+                    : null
+            ),
+            capacityDimension: input.dimension,
+            observedValue: input.observedValue,
+            supportedValue: input.supportedValue
+        });
         this.approvedAt = null;
         this.used = false;
         this.conditionalIdentity = input.conditionalIdentity;

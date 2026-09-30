@@ -38,11 +38,13 @@ You can easily access Azure Maps by following these steps:
 
 The project builder and labeler tool use the same functionality to import external imagery layers.
 
-> **Note** that any URL's should be to hosted services. URL's that point to the local file directory will not be accepted by the browsers security. 
+> **Note** that URLs should point directly to their final HTTPS service. Application-controlled requests reject redirects, embedded credentials, unsafe schemes, and remote plaintext HTTP. URLs that point to the local file directory are generally not accepted by browser security.
 
 If you have content, such as map tiles, on your local file system that you want to bring into one of the tools as a layer, you will need to host that data somewhere. 
 - Setting up a local service on `localhost` is one option if only you want access to this data. 
 - If you want to make the data available to others, you will need to host it on a CORs enabled server. For more details, see the **Hosting files in a CORs enabled Azure Blob storage** section in the [Project builder documentation](Project-builder.md).
+
+Relative layer URLs retain their documented workflow base. Formatted tile placeholders are validated before expansion and the expanded request must remain on the approved origin. If a deployment uses a proxy, that proxy is responsible for validating every redirect hop; browser-side direct requests block all redirects.
 
 ### Add a tile layer
 
@@ -126,4 +128,3 @@ The second way to position an imagery layer is to specify coordinates for each c
 **Optional parameters:**
 
 - **Active layer** - Specifies which sub-layer within the service to display. If not specified, the first layer in the service's list of sub-layers will be used.
-

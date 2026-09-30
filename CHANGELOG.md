@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Moved large GeoJSONL and project archive intake into incremental workers with progress, cancellation, resource accounting, and atomic state updates.
+- Added source-independent task/project validation, relationship checks, and dangerous-key rejection across local, remote, archive, and restored data.
+- Sanitized formatted instructions and replaced dynamic metadata HTML with safe DOM/text rendering.
+- Added validated HTTPS destination handling, direct redirect rejection, and deployment guidance for proxies and browser limitations.
+- Added a restrictive browser content policy and externalized application startup modules.
+- Added pinned contributor tooling and multi-engine unit/browser regression coverage while preserving the static vendored browser runtime.
+
 ## 10/5/2023 [Version 2.0.5]
 
 - Improved logic of image layer coordinate parsing to support a couple of edge case involving hyphen/dash as a minus sign.

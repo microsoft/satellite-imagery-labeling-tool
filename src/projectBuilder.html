@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'self'; script-src 'self' https://atlas.microsoft.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://atlas.microsoft.com; font-src 'self' https://atlas.microsoft.com; img-src 'self' data: blob: https:; connect-src 'self' https:; object-src 'none'; frame-src 'none'; form-action 'self'"/>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="shortcut icon" href="./assets/earth.ico"/>
+	<link rel="stylesheet" href="libs/material-symbols/outlined.css"/>
+    <script src="modules/localServerGuidance.js" defer></script>
     
 	<title>Spatial imagery labeling project builder</title>
 
 	<!-- Add Azure Maps CSS files. -->
-	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css"/>
-	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.css" />
-
-	<!-- Add fonts CSS files. -->
-	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&v=1656088853827">
+	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" integrity="sha384-59ojKv+oBxaGUcP1dK+iHONfFFO09inCib+Zg2wV6WXmAJwinV4bp+hQ1s4HU0g6" crossorigin="anonymous"/>
+	<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.css" integrity="sha384-0aMUOBPV5vyPlTfGQjpTxMKef45D6FZbzhB3Im4IBb+4lEUGNo7AYu7J3jywnBsI" crossorigin="anonymous"/>
 
 	<!-- Add App CSS files. -->
 	<link rel="stylesheet" href="css/themes/indigo.css"/>
@@ -39,7 +39,7 @@
                 <h2>Step 1: Project details</h2>
 
                 <label for="projectName" class="topLabel" title="A unique name for the annotaiton project.">Project Name (required)</label>
-                <input id="projectName" type="text" data-binding="project_name" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');"/>
+                <input id="projectName" type="text" data-binding="project_name" autocomplete="off" readonly/>
 
                 <div><label for="instructions" class="topLabel" title="Any guidance you would like to provide end users who are doing the annotation.">User instructions</label> <span>(<a href="https://en.wikipedia.org/wiki/Markdown" target="_blank">Markdown supported</a>)</span></div>
                 <textarea id="instructions" data-binding="instructions"></textarea>
@@ -98,6 +98,14 @@
                 <label for="importAreaFile" class="topLabel">Or import area from local file.</label>              
                 <input type="file" id="importAreaFile" accept=".geojson,.geojsonl,.xml,.kml,.kmz,.zip,.gml,.gpx,.georss,.csv,.txt,.tab,.pipe,.json,.js"/>
                 <button id="importAreaBtn" class="text-btn-round" type="button">Import area</button>
+                <div id="areaImportStatus" class="intake-status" role="status" aria-live="polite" hidden>
+                    <span id="areaImportMessage"></span>
+                    <div>
+                        <button id="areaImportPause" class="text-btn-round" type="button">Pause</button>
+                        <button id="areaImportResume" class="text-btn-round" type="button">Resume</button>
+                        <button id="areaImportCancel" class="text-btn-round" type="button">Cancel import</button>
+                    </div>
+                </div>
                 
                 <label for="gridUnits" class="topLabel">Grid size units</label>
                 <select id="gridUnits">
@@ -179,20 +187,17 @@
 	</div>
 
 	<!-- Add Azure Maps libraries -->
-	<script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
-    <script src="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.js"></script>
-    <script src="https://atlas.microsoft.com/sdk/javascript/spatial/0/atlas-spatial.min.js"></script>
+	<script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js" integrity="sha384-9/rcXx8mMp2NSsvBG2dGqmp1mvka1Th6mKwswKVg1KmLwaj+oScWpZBF6u6Waejb" crossorigin="anonymous"></script>
+    <script src="https://atlas.microsoft.com/sdk/javascript/drawing/1/atlas-drawing.min.js" integrity="sha384-hSbiDCEvgwFU7fM+sPrh7qXUW8sML+ngq+ax0n3lqflMDtAg6giLXAOsnvJ3oZjr" crossorigin="anonymous"></script>
+    <script src="https://atlas.microsoft.com/sdk/javascript/spatial/0/atlas-spatial.min.js" integrity="sha384-I45x3rkxF55Pva8mnkoEa3U6JSKO7aoL6H/qYeqMuFcJ96k0QOH6ZAp6oLd1tMEq" crossorigin="anonymous"></script>
 	
 	<!-- Add 3rd party libraries libraries -->
 	<script src="libs/azure-maps-image-exporter.min.js"></script>
 	<script src='libs/turf.min.js'></script>    
 	<script src="libs/marked.min.js"></script>
+	<script src="libs/purify.min.js"></script>
     <script src="libs/jszip.min.js"></script>
 
-	<!-- Load the app module. -->
-	<script type="module">
-        import { ProjectBuilderApp } from './modules/projectBuilder.js';
-		window.app = new ProjectBuilderApp();
-	</script>
+	<script type="module" src="modules/projectBuilderBootstrap.js"></script>
 </body>
 </html>

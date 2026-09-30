@@ -1,0 +1,34 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "task-1",
+      "bbox": [0, 0, 1, 1],
+      "properties": {
+        "project_name": "Example project",
+        "name": "task-1",
+        "instructions": "Draw the visible area.",
+        "instructions_on_load": true,
+        "allow_wizard": true,
+        "drawing_type": "polygons",
+        "layers": {},
+        "primary_classes": {
+          "display_name": "Class",
+          "property_name": "class",
+          "names": ["building"],
+          "colors": ["#0067b8"]
+        },
+        "secondary_classes": {
+          "display_name": "Condition",
+          "property_name": "condition",
+          "names": []
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]
+      }
+    }
+  ]
+}

@@ -1,5 +1,146 @@
 import { Utils, SimpleEventerClass } from "../utils.js";
 import { mapSettings } from '../../settings/map_settings.js'
+import { renderInstruction, setText } from '../safeRendering.js';
+import {
+    createDestinationDecision,
+    requireAllowedDestination
+} from '../remoteDestination.js';
+
+export function confirmCapacityOverride({ attempt, source, acknowledge, warning }) {
+    return new Promise(resolve => {
+        const dialog = document.createElement('dialog');
+        dialog.setAttribute('aria-labelledby', 'capacity-warning-title');
+        dialog.setAttribute('aria-describedby', 'capacity-warning-description');
+
+        const title = document.createElement('h2');
+        title.id = 'capacity-warning-title';
+        setText(title, 'Retry without the processing boundary?');
+
+        const description = document.createElement('p');
+        description.id = 'capacity-warning-description';
+        const dimensions = Object.entries(attempt.measuredDimensions ?? {})
+            .map(([name, values]) =>
+                `${name}: ${values.observed} observed; ${values.supported} configured`)
+            .join('; ');
+        setText(
+            description,
+            `${source.displayName} exceeded configured processing boundaries `
+            + `(${dimensions || `${attempt.dimension}: ${attempt.observedValue} observed; `
+                + `${attempt.supportedValue} configured`}). `
+            + 'A single foreground retry disables the supported-capacity boundary and may freeze '
+            + 'or terminate this page and lose unsaved in-memory work. '
+            + 'Cancellation is best effort and may stop responding. '
+            + 'All destination, content, and other non-capacity validation still applies before commit.'
+            + (warning ? ` ${warning}` : '')
+        );
+
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        label.appendChild(checkbox);
+        label.append(' I understand and want to use the one-time retry.');
+
+        const actions = document.createElement('div');
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.disabled = true;
+        setText(retry, 'Retry once');
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        setText(cancel, 'Cancel');
+        actions.append(retry, cancel);
+
+        const finish = approved => {
+            dialog.close();
+            dialog.remove();
+            resolve(approved);
+        };
+        checkbox.addEventListener('change', () => {
+            retry.disabled = !checkbox.checked;
+        });
+        retry.addEventListener('click', () => {
+            if (!checkbox.checked) {
+                return;
+            }
+            acknowledge();
+            finish(true);
+        });
+        cancel.addEventListener('click', () => finish(false));
+        dialog.addEventListener('cancel', event => {
+            event.preventDefault();
+            finish(false);
+        });
+
+        dialog.append(title, description, label, actions);
+        document.body.appendChild(dialog);
+        dialog.showModal();
+        checkbox.focus();
+    });
+}
+
+export function confirmPrivateDestination(labels) {
+    return new Promise(resolve => {
+        const dialog = document.createElement('dialog');
+        const titleId = `private-destination-title-${crypto.randomUUID()}`;
+        dialog.setAttribute('aria-labelledby', titleId);
+
+        const title = document.createElement('h2');
+        title.id = titleId;
+        setText(title, labels.title);
+
+        const description = document.createElement('p');
+        setText(description, labels.description);
+
+        const acknowledgment = document.createElement('input');
+        acknowledgment.type = 'checkbox';
+        acknowledgment.id = `private-destination-acknowledgment-${crypto.randomUUID()}`;
+
+        const acknowledgmentLabel = document.createElement('label');
+        acknowledgmentLabel.htmlFor = acknowledgment.id;
+        setText(acknowledgmentLabel, labels.acknowledgment);
+
+        const confirmButton = document.createElement('button');
+        confirmButton.type = 'button';
+        confirmButton.disabled = true;
+        setText(confirmButton, labels.action);
+
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        setText(cancelButton, labels.cancel);
+
+        const finish = approved => {
+            dialog.close();
+            dialog.remove();
+            resolve(approved);
+        };
+        acknowledgment.addEventListener('change', () => {
+            confirmButton.disabled = !acknowledgment.checked;
+        });
+        confirmButton.addEventListener('click', () => {
+            if (acknowledgment.checked) {
+                finish(true);
+            }
+        });
+        cancelButton.addEventListener('click', () => finish(false));
+        dialog.addEventListener('cancel', event => {
+            event.preventDefault();
+            finish(false);
+        });
+
+        dialog.append(
+            title,
+            description,
+            acknowledgment,
+            acknowledgmentLabel,
+            document.createElement('br'),
+            confirmButton,
+            cancelButton
+        );
+        document.body.appendChild(dialog);
+        dialog.showModal();
+        acknowledgment.focus();
+    });
+}
 
 /**
  * Template for a dialog panel.
@@ -16,6 +157,13 @@ const dialogTemplate = `
         </div>
     </div>
 `;
+
+function setDialogTemplate(container, title) {
+    container.innerHTML = dialogTemplate.replace('{{title}}', '');
+    const titleContainer = container.querySelector('.dialog-title');
+    const closeButton = titleContainer.querySelector('button');
+    titleContainer.replaceChildren(document.createTextNode(String(title ?? '')), closeButton);
+}
 
 /**
  * Template for a layer dialog control.
@@ -180,7 +328,7 @@ export class AddLayerDialog extends SimpleEventerClass {
         c.style.display = 'none';
 
         //Set the title of the dialog.
-        c.innerHTML = dialogTemplate.replace('{{title}}', 'Add layer');
+        setDialogTemplate(c, 'Add layer');
 
         //Wire up the close button to cancel the creation of a layer.
         c.querySelector('.dialog-title button').onclick = () => {
@@ -331,9 +479,23 @@ export class AddLayerDialog extends SimpleEventerClass {
         const layerType = lt.options[lt.selectedIndex].value;
 
         const ln = c.querySelector('.layer-name input').value;
-        const serviceUrl = c.querySelector('.service-url input').value;
-        const urlLocalUrl = c.querySelector('.url-local-file input').value;
+        let serviceUrl = c.querySelector('.service-url input').value;
+        let urlLocalUrl = c.querySelector('.url-local-file input').value;
         const bounds = self.#getBounds();
+
+        try {
+            if (serviceUrl) {
+                serviceUrl = self.#validateLayerDestination(serviceUrl, [
+                    'x', 'y', 'z', 'quadkey', 'bbox-epsg-3857', 'subdomain'
+                ]);
+            }
+            if (urlLocalUrl) {
+                urlLocalUrl = self.#validateLayerDestination(urlLocalUrl, [], true);
+            }
+        } catch (error) {
+            confirm(error.message);
+            return;
+        }
 
         //Clear file input so it can be used again.
         const fileInput = c.querySelector('.url-local-file input[type="file"]');
@@ -441,7 +603,7 @@ export class AddLayerDialog extends SimpleEventerClass {
 
                 //Loop through each line of text and attempt to process it as a TileJSON URL. 
                 for (let i = 0; i < lines.length; i++) {
-                    const line = lines[0].trim();
+                    const line = lines[i].trim();
                     if (line !== '') {
                         //Each line can have two space delimited values. Value 1 = URL, value 2 = Name.
                         const parts = line.split(' ');
@@ -546,6 +708,9 @@ export class AddLayerDialog extends SimpleEventerClass {
      * @returns TileJSON tile layer options, or null.
      */
     async #getTileJson(url) {
+        url = this.#validateLayerDestination(url, [
+            'x', 'y', 'z', 'quadkey', 'bbox-epsg-3857', 'subdomain'
+        ]);
         //Check to see if this is a TileJSON or formatted URL. 
         if (url.indexOf('{x}') !== -1 || url.indexOf('{quadkey}') !== -1 || url.indexOf('{bbox-epsg-3857}') !== -1) {
             //Formatted tile URL. Not a TileJSON URL.
@@ -566,6 +731,12 @@ export class AddLayerDialog extends SimpleEventerClass {
      */
     #testOgcServiceUrl(url) {
         const self = this;
+        try {
+            url = self.#validateLayerDestination(url);
+        } catch (error) {
+            confirm(error.message);
+            return;
+        }
 
         const activeLayerSelector = self.#container.querySelector('select[name="active-ogc-layer-selector"]');
         activeLayerSelector.innerHTML = '';
@@ -595,18 +766,13 @@ export class AddLayerDialog extends SimpleEventerClass {
                     }
 
                     //Create a list of sublayers to choose from. We will only allow a single sublayer to be selected in this app.
-                    var html = [];
-
                     for (var i = 0; i < cap.sublayers.length; i++) {
-                        html.push('<option value="', cap.sublayers[i].id, '"');
-
-                        if (i === 0) {
-                            html.push(' selected="selected"');
-                        }
-                        html.push('>', cap.sublayers[i].title, '</option>');
+                        const option = document.createElement('option');
+                        option.value = cap.sublayers[i].id;
+                        option.selected = i === 0;
+                        setText(option, cap.sublayers[i].title);
+                        activeLayerSelector.appendChild(option);
                     }
-
-                    activeLayerSelector.innerHTML = html.join('');
 
                     //If no layer name has been specified by the user yet, use the services title value as the name.
                     if (cap.title && cap.title !== '') {
@@ -637,6 +803,7 @@ export class AddLayerDialog extends SimpleEventerClass {
      * @returns Image layer options needed to render the KML ground overlay, or null. 
      */
     async #testKmlGroundOverlay(urlLocalUrl) {
+        urlLocalUrl = this.#validateLayerDestination(urlLocalUrl, [], true);
         const kml = await atlas.io.read(urlLocalUrl, {
             parseStyles: false,
             ignoreVisibility: true,
@@ -669,6 +836,19 @@ export class AddLayerDialog extends SimpleEventerClass {
         }
 
         return null;
+    }
+
+    #validateLayerDestination(value, allowedPlaceholders = [], allowBlob = false) {
+        const decision = createDestinationDecision(value, {
+            baseUrl: window.location.href,
+            currentOrigin: window.location.origin,
+            reviewedOrigins: mapSettings.reviewedServiceOrigins,
+            allowLocalhost: mapSettings.allowLocalhostHttp,
+            allowBlob,
+            allowedPlaceholders
+        });
+        requireAllowedDestination(decision);
+        return decision.templateContext ? value : decision.resolvedUrl;
     }
 
     /**
@@ -752,7 +932,7 @@ export class ContentDialog {
         c.style.display = 'none';
 
         //Set the title of the dialog.
-        c.innerHTML = dialogTemplate.replace('{{title}}', title);
+        setDialogTemplate(c, title);
 
         //Wire up the close button to cancel the creation of a layer.
         c.querySelector('.dialog-title button').onclick = () => {
@@ -769,7 +949,13 @@ export class ContentDialog {
             contentElm.classList.add(contentCss);
         }
 
-        contentElm.innerHTML = content;
+        if (content?.status) {
+            renderInstruction(contentElm, content);
+        } else if (content instanceof Node) {
+            contentElm.replaceChildren(content);
+        } else {
+            setText(contentElm, content);
+        }
     }
 
     /**
@@ -815,7 +1001,7 @@ export class SaveResultsDialog {
         c.style.display = 'none';
 
         //Set the title of the dialog.
-        c.innerHTML = dialogTemplate.replace('{{title}}', title);
+        setDialogTemplate(c, title);
 
         //Wire up the close button to cancel the creation of a layer.
         c.querySelector('.dialog-title button').onclick = () => {

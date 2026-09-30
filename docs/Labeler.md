@@ -13,6 +13,8 @@ The labeler tool is the primary tool that those who will be reviewing the imager
    - If you have a task file locally, you can open it by going to `Import data -> Local task file` and selecting the local task file.
    - **Optional URL parameter**: You can add `&maxSourceZoom=[number]` to the URL to override the maximum zoom level for all tile layers. This prevents the map from requesting tiles at zoom levels beyond what the imagery supports. For example: `?taskUrl=...&maxSourceZoom=18` 
 
+Remote task URLs must resolve directly to their final HTTPS destination. Redirects are rejected rather than followed, and a task that introduces a new destination is disclosed for that load. Plaintext remote HTTP is not supported; explicitly configured localhost development is the only exception.
+
 3. Use the drawing tools in the top right corner to draw features on the map. 
     > Be sure to select the classification of the data using the panel below the drawing tools. See [Drawing tools documentation](https://learn.microsoft.com/azure/azure-maps/drawing-tools-interactions-keyboard-shortcuts) for details on all the different ways to draw features on the map.
 
@@ -84,6 +86,8 @@ The app will automatically save the drawn data on the map to a local storage in 
 All cached data will be **deleted after 30 days** by default (you can adjust this in the `labeler_settings.js` file under `autoSave -> ttl`). All data is stored within the end user's browser and is not sent to any servers for security and privacy.
 
 By default, the app will attempt to cache data using `indexedDB` which provides access to more than enough storage space. If `indexedDB` is disabled or unavailable in the browser, the app will fallback to the `localStorage` API which has a limit of 5MB of storage (roughly enough for 10K simple polygons like building footprints). 
+
+Restored autosave content is validated with the same version 2 task and result rules used for newly loaded files before it can replace the active task state.
 
 In most scenarios either of these storage solutions should be sufficient. It is possible that given a large area, and using the OSM importer feature, that more than 10K features would be on the map. If `indexedDB` and `localStorage` API's are not accessible in the browser (rare), this auto save feature will be disabled.
 

@@ -140,6 +140,17 @@ body {
     transform: scale(0.8);
 }
 
+.intake-status {
+    position: absolute;
+    z-index: 100001;
+    left: 60px;
+    bottom: 20px;
+    max-width: min(520px, calc(100vw - 100px));
+    border: 1px solid currentColor;
+    background: var(--main_bg_color);
+    padding: 10px;
+}
+
 #powerToolsCard {
     display: grid;
 }

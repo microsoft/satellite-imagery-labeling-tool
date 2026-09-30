@@ -4,8 +4,13 @@ import { mapSettings } from '../settings/map_settings.js'
 import { Utils } from './utils.js';
 import { ProjectUtils } from './projectUtils.js';
 import { SimpleLayerControl, SearchBarControl, SimpleContentControl } from './controls/customMapControls.js';
-import { AddLayerDialog, ContentDialog } from './controls/dialogs.js';
+import { AddLayerDialog, ContentDialog, confirmCapacityOverride, confirmPrivateDestination } from './controls/dialogs.js';
 import { SimpleBinding } from './simpleBinding.js'
+import { renderSafeMarkdown, setText } from './safeRendering.js';
+import { showDestinationDeclinedNotice } from './operationNotice.js';
+import { isMatchingReadyResult, startGeoJsonlIntake } from './geoJsonlIntake.js';
+import { presentField } from './presentationContexts.js';
+import './geoJsonlParser.js';
 
 /**
  * The main logic for the spatial annotation project builder app.
@@ -50,6 +55,7 @@ export class ProjectBuilderApp {
     #cellSize = 1;
     #gridUnits = 'kilometers';
     #cardIdx = 1;
+    #areaImportOperation = null;
 
     /**
      * The main logic for the spatial annotation project builder app.
@@ -60,7 +66,7 @@ export class ProjectBuilderApp {
         const hasAZMapAuth = Utils.isAzureMapsAuthValid(mapSettings.azureMapsAuth);
         this.#hasAZMapAuth = hasAZMapAuth;
 
-        document.querySelector('title').innerText = appSettings.builderTitle;
+        setText(document.querySelector('title'), appSettings.builderTitle);
 
         //Initialize a map instance.
         self.map = Utils.createMap('myMap', mapSettings.azureMapsAuth);
@@ -100,7 +106,7 @@ export class ProjectBuilderApp {
         };
 
         //Help functionality.
-        const helpDialog = new ContentDialog('Project builder help', marked.parse(appSettings.helpBuilderContent), 'helpContent');
+        const helpDialog = new ContentDialog('Project builder help', renderSafeMarkdown(appSettings.helpBuilderContent), 'helpContent');
         document.getElementById('helpBtn').onclick = () => {
             helpDialog.show();
         };
@@ -242,7 +248,12 @@ export class ProjectBuilderApp {
         const preview = document.getElementById('instructionsPreview');
         const instructions = document.getElementById('instructions');
         instructions.addEventListener('keyup', () => {
-            preview.innerHTML = marked.parse(instructions.value);
+            presentField(
+                preview,
+                'project.instructions',
+                'builder-instructions-preview',
+                instructions.value
+            );
         });
 
         
@@ -278,9 +289,12 @@ export class ProjectBuilderApp {
     /** Validates the fields of step 1 and determines if user can proceed to step 2. */
     #validateStep1() {
         const props = this.#config.properties;
+        const projectName = document.getElementById('projectName').value.trim();
+        props.project_name = projectName;
+        this.#config.id = projectName;
 
         //Must include a project name.
-        document.querySelector('#step-1 .nextBtn').disabled = (!props.project_name || props.project_name.trim() === '');
+        document.querySelector('#step-1 .nextBtn').disabled = projectName === '';
     }
 
     /**
@@ -409,33 +423,16 @@ export class ProjectBuilderApp {
         //Load data from local file. 
         const importAreaFile = document.getElementById('importAreaFile');
         importAreaFile.onchange = (e) => {
-            const source = self.#drawingManager.getSource();
-            source.clear();
-            self.#gridSource.clear();
             self.#drawingManager.setOptions({ mode: "idle" });
 
             if (e.target.files && e.target.files.length > 0) {
                 const file = e.target.files[0];
 
                 if (file.name.toLowerCase().indexOf('.geojsonl') > -1) {
-                    //Parse as GeoJSONL
-                    e.target.files[0].text().then(data => {
-                        try {
-                            var features = [];
-                            var lines = data.split('\n');
-                            for (let i = 0, len = lines.length; i < len; i++) {
-                                try {
-                                    features.push(JSON.parse(lines[i]));
-                                } catch { }
-                            }
-
-                            self.#importFirstPolygon(features);
-                        } catch (e) {
-                            alert('Unable to load data file.');
-                            self.#validateStep3();
-                        }
-                    });
+                    self.#startAreaGeoJsonlImport(file);
                 } else {
+                    self.#drawingManager.getSource().clear();
+                    self.#gridSource.clear();
                     e.target.files[0].arrayBuffer().then(data => {
                         try {
                             //Use Spatial IO module to parse.
@@ -463,6 +460,154 @@ export class ProjectBuilderApp {
         document.getElementById('importAreaBtn').onclick = () => {
             importAreaFile.click();
         };
+
+        document.getElementById('areaImportPause').onclick = () => {
+            self.#areaImportOperation?.pause();
+        };
+        document.getElementById('areaImportResume').onclick = () => {
+            self.#areaImportOperation?.resume();
+        };
+        document.getElementById('areaImportCancel').onclick = () => {
+            self.#areaImportOperation?.cancel();
+        };
+    }
+
+    #setAreaImportSource(message, visible = true) {
+        const container = document.getElementById('areaImportStatus');
+        container.hidden = !visible;
+        presentField(
+            document.getElementById('areaImportMessage'),
+            'intake.source_name',
+            'builder-area-import-source',
+            message
+        );
+    }
+
+    #setAreaImportDiagnostic(message, visible = true) {
+        const container = document.getElementById('areaImportStatus');
+        container.hidden = !visible;
+        presentField(
+            document.getElementById('areaImportMessage'),
+            'intake.diagnostic',
+            'builder-area-import-diagnostic',
+            message
+        );
+    }
+
+    #startAreaGeoJsonlImport(file) {
+        const self = this;
+        self.#areaImportOperation?.cancel();
+        self.#setAreaImportSource(`Reading ${file.name}...`);
+
+        const operation = startGeoJsonlIntake(file, {
+            mode: 'builder',
+            sourceId: `LocalFile|${file.name}`,
+            onMessage: message => {
+                if (self.#areaImportOperation?.requestId !== message.requestId) {
+                    return;
+                }
+                if (message.type === 'progress') {
+                    self.#setAreaImportDiagnostic(
+                        `Read ${message.bytesRead.toLocaleString()} of ${message.knownTotalBytes.toLocaleString()} bytes; ${message.recordsSeen} records checked.`
+                    );
+                } else if (message.type === 'paused') {
+                    self.#setAreaImportDiagnostic(`Paused after ${message.checkpoint.recordsSeen} records.`);
+                } else if (message.type === 'resumed') {
+                    self.#setAreaImportDiagnostic('GeoJSONL import resumed.');
+                }
+            }
+        });
+        self.#areaImportOperation = operation;
+
+        operation.completion.then(message => {
+            if (self.#areaImportOperation?.requestId !== operation.requestId
+                || !isMatchingReadyResult(operation, message)) {
+                return;
+            }
+            const geometry = globalThis.GeoJsonlParser.compactGeometryToGeoJson(
+                message.stagedResult.payload
+            );
+            const feature = {
+                type: 'Feature',
+                properties: {},
+                geometry
+            };
+            if (self.#commitImportedArea(feature)) {
+                self.#setAreaImportDiagnostic(
+                    `Imported the first valid ${geometry.type} after checking ${message.summary.recordsSeen} records.`
+                );
+            }
+        }).catch(error => {
+            if (self.#areaImportOperation?.requestId !== operation.requestId
+                || error.result?.type === 'cancelled') {
+                return;
+            }
+            self.#setAreaImportDiagnostic('GeoJSONL import failed.');
+            alert(error.message);
+        }).finally(() => {
+            if (self.#areaImportOperation?.requestId === operation.requestId) {
+                self.#areaImportOperation = null;
+            }
+        });
+    }
+
+    #commitImportedArea(feature) {
+        const source = this.#drawingManager.getSource();
+        const previousArea = source.getShapes().map(shape => shape.toJson());
+        const previousGrid = this.#gridSource.getShapes().map(shape => shape.toJson());
+        const preparedGrid = this.#prepareGridCells(structuredClone(feature.geometry));
+        if (!preparedGrid) {
+            return false;
+        }
+
+        try {
+            source.setShapes(feature);
+            this.#commitGridCells(preparedGrid);
+            this.map.setCamera({
+                bounds: atlas.data.BoundingBox.fromData(feature),
+                padding: 40
+            });
+            return true;
+        } catch (error) {
+            source.setShapes(previousArea);
+            this.#gridSource.setShapes(previousGrid);
+            this.#validateStep3();
+            alert(error.message || 'Unable to prepare the imported area.');
+            return false;
+        }
+    }
+
+    #prepareGridCells(geometry) {
+        let cellSize = this.#cellSize;
+        if (this.#gridUnits !== 'kilometers') {
+            cellSize = atlas.math.convertDistance(cellSize, this.#gridUnits, 'kilometers');
+        }
+
+        try {
+            Utils.makePolygonValid(geometry);
+        } catch (error) {
+            alert(error.message);
+            return null;
+        }
+
+        const estimatedCellCount = Math.ceil(
+            atlas.math.getArea(geometry, 'squareKilometers') / (cellSize * cellSize)
+        );
+        if (estimatedCellCount > appSettings.gridSizeLimit
+            && !confirm(`Estimating upwards of ${estimatedCellCount} grid cells being generated. Do you want to continue calculating the grid?`)) {
+            return null;
+        }
+
+        return this.#calculateSquareGrid(geometry, cellSize);
+    }
+
+    #commitGridCells(cells) {
+        this.#gridSource.setShapes(cells);
+        this.#validateStep3();
+        this.#statsControl.setOptions({
+            content: `${cells.length} grid cells`,
+            visible: true
+        });
     }
 
     /**
@@ -575,7 +720,7 @@ export class ProjectBuilderApp {
             row.appendChild(cell);
 
             cell = document.createElement('td');
-            cell.innerText = name;
+            presentField(cell, 'class.name', 'builder-class-table', name);
             row.appendChild(cell);
 
             if (bindingObj.colors) {
@@ -808,17 +953,6 @@ export class ProjectBuilderApp {
         const shapes = self.#drawingManager.getSource().getShapes();
 
         let geometry;
-        let cellSize = self.#cellSize;
-        let units = self.#gridUnits;
-
-        //Remove any previously calculated grids.
-        self.#gridSource.clear();
-        self.#validateStep3();
-
-        //Normalize on kilometers for calculations for simplicity.
-        if (units !== 'kilometers') {
-            cellSize = atlas.math.convertDistance(cellSize, units, 'kilometers');
-        }
 
         //Get the area of interest geometry.
         if (shapes.length > 0) {
@@ -831,38 +965,18 @@ export class ProjectBuilderApp {
             }
         } else {
             //If not area of interest geometry, don't proceed.
-            return;
+            self.#gridSource.clear();
+            self.#validateStep3();
+            return false;
         }
 
-        //Try and make polygon valid, incase it isn't already valid.
-        try {
-            Utils.makePolygonValid(geometry);
-        } catch (e) {
-            alert(e.message);
-            return;
+        const cells = self.#prepareGridCells(geometry);
+        if (!cells) {
+            return false;
         }
 
-        //Estimate the number of grid cells that would be by comparing the area of the geometry to the area of a single cell.
-        const estNumCells = Math.ceil(atlas.math.getArea(geometry, 'squareKilometers') / (cellSize * cellSize));
-
-        //If estimate exceeds limit setting, ask the user if they want to continue.
-        if (estNumCells > appSettings.gridSizeLimit && !confirm(`Estimating upwards of ${estNumCells} grid cells being generated. Do you want to continue calculating the grid?`)) {
-            return;
-        }
-
-        //Calculate the grid cells that intersect the area of interest geometry, and capture the available layers for each cell.
-        const cells = self.#calculateSquareGrid(geometry, cellSize);
-
-        //Add the calculated grids to the map.
-        this.#gridSource.setShapes(cells);
-
-        //Validate the step.
-        this.#validateStep3();
-
-        self.#statsControl.setOptions({
-            content: `${cells.length} grid cells`,
-            visible: true
-        });
+        self.#commitGridCells(cells);
+        return true;
     }
 
     /**
@@ -991,7 +1105,23 @@ export class ProjectBuilderApp {
         const self = this;
         //const settingsFileName = 'project_builder_settings.json';
 
-        ProjectUtils.readProjectFile(fileBlob).then(project => {
+        ProjectUtils.readProjectFile(fileBlob, false, {
+            confirmCapacityOverride,
+            confirmDestinationOrigin: decision => Promise.resolve(confirm(
+                `This project references data from ${decision.origin}. Continue?`
+            )),
+            confirmPrivateDestination: decision => confirmPrivateDestination({
+                title: 'Load project data from a private address?',
+                description: `This project references ${decision.origin}. Only continue if you trust this private network destination.`,
+                acknowledgment: 'I understand this project will contact a private network address.',
+                action: 'Load project data',
+                cancel: 'Cancel project load'
+            })
+        }).then(project => {
+            if (project.status === 'declined') {
+                showDestinationDeclinedNotice('Project load', project.decision);
+                return;
+            }
             //Load the area of interest into the drawing manager.
             self.#drawingManager.getSource().setShapes(project.aoi);
 
@@ -1023,7 +1153,7 @@ export class ProjectBuilderApp {
 
             const customDataSwitch = document.getElementById('customDataSwitch');
             customDataSwitch.checked = (props.customDataService && props.customDataService !== '');
-            customDataSwitch.onclick();
+            customDataSwitch.dispatchEvent(new Event('click'));
 
             //Trigger instructions preview to update.
             elms.instructions.dispatchEvent(new Event('keyup'));
@@ -1097,6 +1227,9 @@ export class ProjectBuilderApp {
 
             //Clear the file input so that the same file can be reloaded if desired.
             elms.loadLocalProjectFile.value = null;
+        }).catch(error => {
+            document.getElementById('loadLocalProjectFile').value = null;
+            alert(error.message || 'Unable to load project archive.');
         });
     }
 }

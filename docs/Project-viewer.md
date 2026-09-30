@@ -20,3 +20,5 @@ The project viewer is the tool used by a project administrator to view and merge
 6. Use the dropdown in the left side panel to view the individual features colored by a primary or secondary class.
    
 7. Click the **Merge and export results** button to merge and export the results as an output file. The output file is a GeoJSON file containing a feature collection of all the drawn features. Each feature will have details in its properties; at a minimum, each will have the primary and secondary class, `source`, and `task_name`, which is the same as the [Result file format](Labeler.md#result-file-format) from the labeler.
+
+The viewer continues to accept valid version 2 project archives. It validates the archive manifest, settings, tasks, results, complete geometry structures, and their relationships before replacing the current view; invalid, cancelled, or incomplete loads do not partially update the project. An archive that references an unreviewed HTTPS origin discloses that origin and requires approval before the project is committed or its layers are rendered.

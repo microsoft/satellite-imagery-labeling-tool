@@ -175,3 +175,12 @@ input[type="color"] {
 .main-content {
     width: calc(100vw - 251px);
 }
+
+.intake-status {
+    border: 1px solid currentColor;
+    padding: 8px;
+}
+
+.intake-status button {
+    margin-right: 4px;
+}
